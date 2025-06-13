@@ -2,11 +2,11 @@
 A simple mod to bring your jojo fantasies into ULTRAKILL!
 -------
 ### You can do shit like this:
-![image](https://github.com/user-attachments/assets/65a3f835-57b9-41e8-862d-594b0afddc5d)
+![image](https://github.com/user-attachments/assets/912e29b0-0aaa-4d5c-9c75-2fb54d20edb7)
 
 
 or like this:
-![image](https://github.com/user-attachments/assets/8bd8781c-c8cc-476f-8870-1ad0e07739fc)
+![image](https://github.com/user-attachments/assets/36ec4e68-94fc-4c1c-8a82-60b53ae3a94c)
 (Yes, the grayscale effect is also included, and customizable)
 
 
@@ -61,13 +61,16 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
   
    ### to first get the gold arm, find this frickin' door:
 
-  ![image](https://github.com/user-attachments/assets/7d024cb6-a133-41ac-a52e-fc00a02be7b0)
+  ![image](https://github.com/user-attachments/assets/ef4f57b3-d8e1-4428-886d-2b1fc1da7c17)
+
   
   #### The timestop ability will start with 3 seconds by default, you can upgrade your arm through this button
-<img src="https://github.com/user-attachments/assets/a31a6743-86f2-4759-bca5-204846dad84f" alt="terminal_ss" width="1200"/>
+![image](https://github.com/user-attachments/assets/11be4c3f-bed5-4e1f-ba0c-4611bbe30c12)
+
 
 #### and then this menu over here:
-![image](https://github.com/user-attachments/assets/64ebb0db-1d30-472b-8212-3009576df445)
+![image](https://github.com/user-attachments/assets/db0f0ee2-3562-449f-bebb-7840e6e571d6)
+
 
 Each upgrade increases the time by around one second, changes by the upgrade count though.
 </details>
