@@ -102,3 +102,5 @@ C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Debug\The Time
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Debug\The Timestopper.pdb
 C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Galvinsmods-The Timestopper\The Timestopper.dll
 C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Galvinsmods-The Timestopper\The Timestopper.pdb
+C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Unknown-The_Timestopper\The Timestopper.dll
+C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Unknown-The_Timestopper\The Timestopper.pdb

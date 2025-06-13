@@ -17,7 +17,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Galvinsmods-The Timestopper\</OutputPath>
+    <OutputPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Unknown-The_Timestopper\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -29,6 +29,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
