@@ -27,6 +27,7 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
 + +You can still parry in stopped time
 + +No Weapon Cooldown cheat works with gold arm
 + +Gold Arm is upgradable through terminals fr
++ +Customizable animation speed, timestop speed, healability, shader effects, and more...
 + +~someone is watching you~
 
 ### To do:
@@ -36,19 +37,16 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
 + More balancing work, overclocking mechanism, more visual trickery, etc.
 + ~Touch grass~
 + Make the gold arm appear in main menu V1 cool ascii art thingy
-+ Test Cybergrind
-+ Make the animation speed faster, or customizable, or adapt to timestop speed
 + Add sound to arm pickup animation too
 + Add the warning a sound
 + Add more easter eggs
 + Beat P-2 without cheating
-+ ~Make friends~
++ ~Make more friends~
 
 ### Downsides / Current Bugs:
-- -Movement is a bit janky in stopped time.
-- -You become physically retarded when you die in stopped time, or die trying
+- -Movement is a little bit janky in stopped time.
 - -~The pillar cums out the yellow arm wtf!~
-- -Stuck infinitely after act ending cutscenes, haven't checked if it's still there?
+- -Stuck infinitely after act ending cutscenes, haven't checked if it's still there? (needs testing)
 - -No special mode yet
 - -No "ZA WARUDO" voiceline yet, only the sound effect
 
