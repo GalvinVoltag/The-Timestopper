@@ -5,7 +5,6 @@ C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\Assemb
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\BepInEx.dll
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\Configgy.dll
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\Unity.Addressables.dll
-C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\Unity.ResourceManager.dll
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\Unity.TextMeshPro.dll
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\UnityEngine.AnimationModule.dll
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\UnityEngine.AssetBundleModule.dll
@@ -101,3 +100,4 @@ C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Release\The Ti
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Release\The Timestopper.csproj.CopyComplete
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Release\The Timestopper.dll
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Release\The Timestopper.pdb
+C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\Unity.ResourceManager.dll

@@ -2,7 +2,7 @@
     "manifestVersion": 1,
     "name": "GalvinVoltag-The_Timestopper",
     "authorName": "GalvinVoltag",
-    "websiteUrl": "",
+    "websiteUrl": "https://github.com/GalvinVoltag/The-Timestopper",
     "displayName": "The_Timestopper",
     "description": "Have the Gold arm and stop time at will",
     "gameVersion": "",
@@ -21,7 +21,7 @@
     "versionNumber": {
         "major": 0,
         "minor": 9,
-        "patch": 2
+        "patch": 4
     },
     "enabled": true,
     "icon": ""

@@ -25,8 +25,8 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
 + +You can punch enemies in stopped time, they will fly away when you start it
 + +You can still throw coins in stopped time, they will remain in air after a while, crazy tricks are possible
 + +You can still parry in stopped time
-+ +No Weapon Cooldown cheat works with gold arm
-+ +Gold Arm is upgradable through terminals fr
++ +"No Weapon Cooldown" cheat works with Timestopper
++ +Gold Arm is upgradable through terminals fr fr
 + +~someone is watching you~
 
 ### To do:
@@ -36,8 +36,8 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
 + More balancing work, overclocking mechanism, more visual trickery, etc.
 + ~Touch grass~
 + Make the gold arm appear in main menu V1 cool ascii art thingy
-+ Test Cybergrind
-+ Make the animation speed faster, or customizable, or adapt to timestop speed
++ ~Test Cybergrind~ done
++ ~Make the animation speed faster, or customizable, or adapt to timestop speed~ done, made customizable
 + Add sound to arm pickup animation too
 + Add the warning a sound
 + Add more easter eggs
