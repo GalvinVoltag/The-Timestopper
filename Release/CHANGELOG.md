@@ -1,5 +1,30 @@
 # CHANGELOG:
 
+
+<details>
+  <summary>0.9.6</summary>
+  
+  ### Little Update
+  - Fixed a bug where the time juice would still drain in the pause menu
+  - Fixed a typo in configgy settings, "Interaction Slowdown Pultiplier"
+  - Recalibrated default configgy settings
+  - Hopefully fixed some Null Reference Exceptions
+  - Added temporary fixes to configgy menu for a bug where Player slowed down
+  
+</details>
+
+---
+
+<details>
+  <summary>0.9.5</summary>
+  
+  ### Emergency QuickFix
+  - Fixed a bug where the mod didn't work at all
+  
+</details>
+
+---
+
 <details>
   <summary>0.9.4</summary>
   

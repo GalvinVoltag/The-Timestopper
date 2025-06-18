@@ -157,7 +157,7 @@ namespace The_Timestopper
     {
         public const string GUID = "TheTimestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "0.9.4";
+        public const string Version = "0.9.6";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -239,6 +239,10 @@ Takes time to recharge, can be upgraded through the terminals.
         public static ConfigEntry<float> blindScale; //0.4f
         public static ConfigEntry<float> refillMultiplier; //0.12f
         public static ConfigEntry<float> antiHpMultiplier;
+        //!!!!!!!!!!!!!!!!!!! FIXES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\
+        public static ConfigEntry<bool> badMovementFix;
+        public static ConfigEntry<bool> badMovementFix2;
+
 
 
         void InitializeConfig()
@@ -250,16 +254,16 @@ Takes time to recharge, can be upgraded through the terminals.
                 stopSound = Config.Bind<SoundTypeA>("", "Timestop Sound", SoundTypeA.Za_Warudo);
                 stoppedSound = Config.Bind<SoundTypeB>("", "Stooped Time Ambience", SoundTypeB.Classic);
                 startSound = Config.Bind<SoundTypeC>("", "Timestart Sound", SoundTypeC.Classic);
-                stopSpeed = Config.Bind<float>("", "Slowdown Multiplier", 1f, "How many seconds it takes for time to stop, set to 0 for instant timestop.");
-                startSpeed = Config.Bind<float>("", "Speedup Multiplier", 1f, "How many seconds it takes for time to start, set to 0 for instant timestart.");
-                affectSpeed = Config.Bind<float>("", "Interaction Slowdown Multiplier", 2.2f, "How many seconds it takes for player interactiosn to stop in time (coins tossed in stopped time, for example), set to zero for no timestop interaction.");
-                affectSpeed = Config.Bind<float>("", "Animation Speed Multiplier", 1.2f, "How fast the Timestopper's animation plays");
+                stopSpeed = Config.Bind<float>("", "Slowdown Multiplier", 0.6f, "How many seconds it takes for time to stop, set to 0 for instant timestop.");
+                startSpeed = Config.Bind<float>("", "Speedup Multiplier", 0.8f, "How many seconds it takes for time to start, set to 0 for instant timestart.");
+                affectSpeed = Config.Bind<float>("", "Interaction Slowdown Multiplier", 1f, "How many seconds it takes for player interactions to stop in time (coins tossed in stopped time, for example), set to zero for no timestop interaction.");
+                animationSpeed = Config.Bind<float>("", "Animation Speed Multiplier", 1.3f, "How fast the Timestopper's animation plays");
                 soundEffectVolume = Config.Bind<float>("", "Sound Effect Volume", 1f, "How loud the timestop and timestart sound effects are.");
                 grayscaleAmount = Config.Bind<float>("", "Grayscale Amount", 1.0f, "Amount of grayscale the screen gets when time is stopped. You are free to change it to ANY number you want. (between 0-1 is intended)");
                 exclusiveGrayscale = Config.Bind<bool>("", "Exclusive Grayscale", true, "Turn screen grayscale only when timestop effect is on play. When false, screen grayscale is applied any time when time stops (main menu, parry, impact frames, etc.), otherwise only when the Timestopper is used.");
                 filterMusic = Config.Bind<bool>("", "Filter Music", false, "Filter music when time is stopped just like in the menu");
                 stoppedMusicPitch = Config.Bind<float>("", "Stopped time Music Pitch", 0.6f, "Pitch of the music when time is stopped, set to 0 to stop the music");
-                stoppedMusicVolume = Config.Bind<float>("", "Stopped time Music Volume", 0.7f, "Volume of the music when time is stopped, set to 0 to stop the music");
+                stoppedMusicVolume = Config.Bind<float>("", "Stopped time Music Volume", 0.8f, "Volume of the music when time is stopped, set to 0 to stop the music");
                 healInTimestop = Config.Bind<bool>("", "Heal in Stopped Time", false, "Wether Player can heal in stopped time or not.");
                 specialMode = Config.Bind<bool>("", "Special Mode", false, "Try and see          >:D) ");
                 //*******TECHNICAL********\\
@@ -267,6 +271,10 @@ Takes time to recharge, can be upgraded through the terminals.
                 blindScale = Config.Bind<float>("{TECHNICAL STUFF}", "! BlindScale !", 0.2f, "Timescale where enemies can't see you.");
                 refillMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! RefillMultiplier !", 0.09f, "Time juice amount you get per second.");
                 antiHpMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! AntiHPMultiplier !", 20, "How fast the hard damage per second builds in stopped time.");
+                //********FIXES***********\\
+                badMovementFix = Config.Bind<bool>("{ FIXES }", "! Bad Movement Fix !", false, "If you are having issues related to movement, try turning this on.");
+                badMovementFix2 = Config.Bind<bool>("{ FIXES }", "! Bad Movement Fix 2 !", false, "If you are having movement related issues, and above option doesn't help, try this..");
+
 
                 config = new ConfigBuilder(GUID, Name);
                 config.BuildAll();
@@ -544,9 +552,22 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             GoldArm.SetActive((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm));
             Player.transform.Find("Main Camera/Punch").GetComponent<FistControl>().goldArm = new AssetReference();
             /////////// Player Moement Fix \\\\\\\\\\\\\\
-            Player.GetComponent<NewMovement>().walkSpeed = 360;
-            Player.GetComponent<NewMovement>().jumpPower = 90;
-            Player.GetComponent<NewMovement>().wallJumpPower = 150;
+            if (badMovementFix2.Value)
+            {
+                Player.GetComponent<NewMovement>().walkSpeed = 700;
+                Player.GetComponent<NewMovement>().jumpPower = 90;
+                Player.GetComponent<NewMovement>().wallJumpPower = 150;
+            } else if (badMovementFix.Value)
+            {
+                Player.GetComponent<NewMovement>().walkSpeed = 700;
+                Player.GetComponent<NewMovement>().jumpPower = 90;
+                Player.GetComponent<NewMovement>().wallJumpPower = 150;
+            } else
+            {
+                Player.GetComponent<NewMovement>().walkSpeed = 360;
+                Player.GetComponent<NewMovement>().jumpPower = 90;
+                Player.GetComponent<NewMovement>().wallJumpPower = 150;
+            }
             mls.LogInfo("Golden Arm created successfully.");
             yield break;
         }
@@ -568,6 +589,10 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             {
                 StartCoroutine(LoadHUD());
                 StartCoroutine(LoadGoldArm());
+            } else
+            {
+                timeStopper = CStopTime(0);
+                timeStarter = CStartTime(0);
             }
             // Update the Level
             if (ConfirmLevel("VIOLENCE /// FIRST") /*&& GameObject.Find("Stairway Down -> Gold Arm Hall") == null && Player != null*/) // Add the door to the level
@@ -652,7 +677,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         {
             if (scene.name != "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ &&
                 scene.name != "Bootstrap" && LoadDone &&
-                scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
+                scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/ &&
+                realTimeScale < 1)
             { 
                 StartTime(0);
             }
@@ -703,10 +729,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         public IEnumerator CStopTime(float speed)
         {
-            try
-            {
-                StopCoroutine(timeStarter);
-            } catch (Exception e) { }
+            StopCoroutine(timeStarter);
             Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.GetComponent<Animator>().Play("Stop");
             Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.GetComponent<Animator>().speed = animationSpeed.Value;
             if (filterMusic.Value)
@@ -730,9 +753,14 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             foreach (Animator A in FindObjectsOfType<Animator>())   // Make animations work in stopped time when time is stopped
                 if (A.gameObject.transform.IsChildOf(Player.transform) && A.updateMode == AnimatorUpdateMode.Normal)
                     A.updateMode = AnimatorUpdateMode.UnscaledTime;
-            Player.GetComponent<NewMovement>().walkSpeed = 360;
-            Player.GetComponent<NewMovement>().jumpPower = 43;
-            Player.GetComponent<NewMovement>().wallJumpPower = 64;
+
+            if (!(badMovementFix.Value || badMovementFix2.Value))
+                Player.GetComponent<NewMovement>().walkSpeed = 360;
+            if (!badMovementFix2.Value)
+            {
+                Player.GetComponent<NewMovement>().jumpPower = 43;
+                Player.GetComponent<NewMovement>().wallJumpPower = 64;
+            }
             Player.GetComponent<Playerstopper>().Awake();
             if (speed == 0)
             {
@@ -752,15 +780,16 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         public IEnumerator CStartTime(float speed)
         {
-            try {
-                StopCoroutine(timeStopper);
-            } catch (Exception e) { }
+            StopCoroutine(timeStopper);
             Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.GetComponent<Animator>().Play("Release");
             if (filterMusic.Value)  
                 musicManager.GetComponent<MusicManager>().UnfilterMusic();
             PlayRespectiveSound(false);
             Physics.simulationMode = SimulationMode.FixedUpdate;
-            Player.GetComponent<NewMovement>().walkSpeed = 360;
+            if (badMovementFix.Value || badMovementFix2.Value)
+                Player.GetComponent<NewMovement>().walkSpeed = 700;
+            else
+                Player.GetComponent<NewMovement>().walkSpeed = 360;
             Player.GetComponent<NewMovement>().jumpPower = 90;
             Player.GetComponent<NewMovement>().wallJumpPower = 150;
             foreach (Animator A in FindObjectsOfType<Animator>())  // Make animations not work in stopped time when time isn't stopped
@@ -796,7 +825,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         {
             if (TimeStop)
             {
-                TimeLeft -= Time.unscaledDeltaTime * (1.0f - realTimeScale);
+                TimeLeft -= playerDeltaTime * (1.0f - realTimeScale);
                 if (TimeLeft < 0)
                     TimeLeft = 0;
                 TimeColor.g = 0.6f;
