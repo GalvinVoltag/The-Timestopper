@@ -1,12 +1,43 @@
 # CHANGELOG:
 
+<details>
+  <summary>0.9.8</summary>
+
+  ### The Freezeframe Comeback!
+  - The freezeframe effect now allows rockets to move through stopped time.
+  - The Timestopper can no longer be upgraded indefinitely, 10 is max by default (customizable in the configgy menu)
+  - Added the option to downgrade the arm to the maximum upgrade count
+  - Added a message to indicate the appearance of a new door in 7-1
+  - Fixed inconsistent movement in timestop
+  - Fixed parrying catapulting Player
+  - Fixed physics speeding up during the timestop sequence
+
+  ### technical changes
+  - Reworked FixedUpdateCaller system
+  - Timestop Jump Fix has been reworked, but still doesn't act identically to non-timestop
+  - Reworked Timestopper.playerTimeScale, Timestopper.playerDeltaTime and Timestopper.playerFixedDeltaTime
+  - Timestopper.playerDeltaTime and Timestopper.playerFixedDeltaTime are now read only properties instead of fiels
+
+</details>
+
+---
+
+<details>
+  <summary>0.9.7</summary>
+  
+  ### Global Fix
+  - Fixed a bug where movement was FPS dependent
+  
+</details>
+
+---
 
 <details>
   <summary>0.9.6</summary>
   
   ### Little Update
   - Fixed a bug where the time juice would still drain in the pause menu
-  - Fixed a typo in configgy settings, "Interaction Slowdown Pultiplier"
+  - Fixed a typo in configgy settings, "Interaction Slowdown Multiplier"
   - Recalibrated default configgy settings
   - Hopefully fixed some Null Reference Exceptions
   - Added temporary fixes to configgy menu for a bug where Player slowed down
@@ -29,8 +60,8 @@
   <summary>0.9.4</summary>
   
   ### Ultra Bugfix
-  - Movement in timestop got reorked
-  - A bug fixed where timestart would capatult Player
+  - Movement in timestop got reworked
+  - A bug fixed where timestart would catapult Player
   - Every gun except the jackhammer works (hopefully) properly now
   - Added animation speed multiplier to settings
   - Complete (90%) code rework
@@ -55,7 +86,7 @@
   
   ### Cybergrind Fix
   - A bug fixed where Timestopper didn't work in cybergrind
-  - Added compatability with Cybergrind Music Explorer mod, the HUD doesn't overlap
+  - Added compatibility with Cybergrind Music Explorer mod, the HUD doesn't overlap
   - Cleaned the code a little bit
   - Properly added github repository
   - Learned how to properly use SceneManager.SceneLoaded

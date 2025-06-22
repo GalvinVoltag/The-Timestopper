@@ -1,5 +1,5 @@
 # THE TIMESTOPPER
-A simple mod to bring your jojo fantasies into ULTRAKILL!
+A mod to bring your jojo fantasies into ULTRAKILL!
 -------
 ### You can do shit like this:
 ![image](https://github.com/user-attachments/assets/912e29b0-0aaa-4d5c-9c75-2fb54d20edb7)
@@ -16,8 +16,8 @@ or like this:
 ------
 
 ## Disclaimer!
-This mod is not recommended for serious playthroughs, it is meant for funzies mostly. It is not fully done and bugs may occur. I recommend you to back up your save files if there is anything important there for you.
-It is also very OP, balancing timestop without keeping it as cool as it is is very hard
+This mod is not recommended for serious playthroughs, it is mainly meant for funzies. It is not fully done and bugs may occur. I recommend you to back up your save files if there is anything important there for you, just in case I mean.
+It is also very OP, balancing timestop without keeping it as cool as it is, is very hard
 
 ****
 
@@ -27,8 +27,8 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
 + +You can still parry in stopped time
 + +No Weapon Cooldown cheat works with gold arm
 + +Gold Arm is upgradable through terminals fr
-+ +Customizable animation speed, timestop speed, healability, shader effects, and more...
-+ +~someone is watching you~
++ +The Freezeframe is able to move it's rockets in stopped time with the alt-fire
++ +Customizable animation speed, timestop speed, healability, shader effects, maximum upgrades, and more...
 
 ### To do:
 + Custom boss to obtain the gold arm from, not a statue that cums it out
@@ -57,7 +57,7 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
 <details>
   <summary>Guide for dummies</summary>
   
-   ### to first get the gold arm, find this frickin' door:
+   ### to first get the gold arm, find this frickin' door in 7-1:
 
   ![image](https://github.com/user-attachments/assets/ef4f57b3-d8e1-4428-886d-2b1fc1da7c17)
 
@@ -70,5 +70,5 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
 ![image](https://github.com/user-attachments/assets/db0f0ee2-3562-449f-bebb-7840e6e571d6)
 
 
-Each upgrade increases the time by around one second, changes by the upgrade count though.
+Each upgrade increases the time by around one second, changes by the upgrade count though. There can be a maximum of 10 upgrades.
 </details>

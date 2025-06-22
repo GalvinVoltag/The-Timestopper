@@ -81,6 +81,15 @@ namespace The_Timestopper
             progress.upgradeCount++;
             Write(progress);
         }
+        public static void ForceDownngradeArm()
+        {   TimestopperProgress progress = Read();
+            while (progress.upgradeCount > Timestopper.maxUpgrades.Value)
+            {
+                progress.upgradeCount--;
+                progress.maxTime -= 1 + 1 / (progress.upgradeCount + 0.5f);
+            }
+            Write(progress);
+        }
         public static void AceptWarning()
         {   TimestopperProgress progress = Read();
             progress.firstWarning = true;
@@ -157,7 +166,7 @@ namespace The_Timestopper
     {
         public const string GUID = "TheTimestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "0.9.6";
+        public const string Version = "0.9.8";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -206,7 +215,22 @@ Takes time to recharge, can be upgraded through the terminals.
         public static bool LoadStarted = false;
         public static float realTimeScale = 1.0f;
         public static float playerTimeScale = 1.0f;
-        public static float playerDeltaTime = 0.0f;
+        public static bool fixedCall = false;
+        public static bool parryWindow = false;
+        public static bool firstLoad = true;
+        public static PrivateInsideTimer messageTimer = new PrivateInsideTimer();
+        public static float playerDeltaTime {
+            get { 
+                if (fixedCall) return Time.fixedDeltaTime; 
+                else if (TimeStop) return Time.unscaledDeltaTime * playerTimeScale;
+                else return Time.deltaTime; }
+        }
+        public static float playerFixedDeltaTime { 
+            get { 
+                if(fixedCall) return Time.fixedDeltaTime;
+                else if (TimeStop) return Time.fixedDeltaTime * playerTimeScale;
+                else return Time.fixedDeltaTime; }
+        }
         public static ULTRAKILL.Cheats.BlindEnemies BlindCheat = new ULTRAKILL.Cheats.BlindEnemies();
         //________________________ COROUTINES __________________________\\
         private IEnumerator timeStopper;
@@ -233,15 +257,14 @@ Takes time to recharge, can be upgraded through the terminals.
         public static ConfigEntry<float> grayscaleAmount;
         public static ConfigEntry<bool> exclusiveGrayscale;
         public static ConfigEntry<bool> healInTimestop;
+        public static ConfigEntry<int> maxUpgrades;
+        public static ConfigEntry<bool> forceDowngrade;
         public static ConfigEntry<bool> specialMode;
         //---------------------technical stuff--------------------\\
         public static ConfigEntry<float> lowerTreshold; //2.0f
         public static ConfigEntry<float> blindScale; //0.4f
         public static ConfigEntry<float> refillMultiplier; //0.12f
         public static ConfigEntry<float> antiHpMultiplier;
-        //!!!!!!!!!!!!!!!!!!! FIXES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\\
-        public static ConfigEntry<bool> badMovementFix;
-        public static ConfigEntry<bool> badMovementFix2;
 
 
 
@@ -265,16 +288,14 @@ Takes time to recharge, can be upgraded through the terminals.
                 stoppedMusicPitch = Config.Bind<float>("", "Stopped time Music Pitch", 0.6f, "Pitch of the music when time is stopped, set to 0 to stop the music");
                 stoppedMusicVolume = Config.Bind<float>("", "Stopped time Music Volume", 0.8f, "Volume of the music when time is stopped, set to 0 to stop the music");
                 healInTimestop = Config.Bind<bool>("", "Heal in Stopped Time", false, "Wether Player can heal in stopped time or not.");
+                maxUpgrades = Config.Bind<int>("", "Maximum Upgrades", 10, "Maximum number of upgrades the Timestopper can get.");
+                forceDowngrade = Config.Bind<bool>("", "Force Downgrade", false, "If the arm is upgraded more than maximum upgrade count (by cheating, or due to different save file), downgrade the arm to the maximum upgrade automatically.");
                 specialMode = Config.Bind<bool>("", "Special Mode", false, "Try and see          >:D) ");
                 //*******TECHNICAL********\\
                 lowerTreshold = Config.Bind<float>("{TECHNICAL STUFF}", "! LowerTreshold !", 2.0f, "Minimum time juice you need to have to do timestop in Seconds");
                 blindScale = Config.Bind<float>("{TECHNICAL STUFF}", "! BlindScale !", 0.2f, "Timescale where enemies can't see you.");
                 refillMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! RefillMultiplier !", 0.09f, "Time juice amount you get per second.");
                 antiHpMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! AntiHPMultiplier !", 20, "How fast the hard damage per second builds in stopped time.");
-                //********FIXES***********\\
-                badMovementFix = Config.Bind<bool>("{ FIXES }", "! Bad Movement Fix !", false, "If you are having issues related to movement, try turning this on.");
-                badMovementFix2 = Config.Bind<bool>("{ FIXES }", "! Bad Movement Fix 2 !", false, "If you are having movement related issues, and above option doesn't help, try this..");
-
 
                 config = new ConfigBuilder(GUID, Name);
                 config.BuildAll();
@@ -552,22 +573,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             GoldArm.SetActive((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm));
             Player.transform.Find("Main Camera/Punch").GetComponent<FistControl>().goldArm = new AssetReference();
             /////////// Player Moement Fix \\\\\\\\\\\\\\
-            if (badMovementFix2.Value)
-            {
-                Player.GetComponent<NewMovement>().walkSpeed = 700;
-                Player.GetComponent<NewMovement>().jumpPower = 90;
-                Player.GetComponent<NewMovement>().wallJumpPower = 150;
-            } else if (badMovementFix.Value)
-            {
-                Player.GetComponent<NewMovement>().walkSpeed = 700;
-                Player.GetComponent<NewMovement>().jumpPower = 90;
-                Player.GetComponent<NewMovement>().wallJumpPower = 150;
-            } else
-            {
-                Player.GetComponent<NewMovement>().walkSpeed = 360;
-                Player.GetComponent<NewMovement>().jumpPower = 90;
-                Player.GetComponent<NewMovement>().wallJumpPower = 150;
-            }
             mls.LogInfo("Golden Arm created successfully.");
             yield break;
         }
@@ -589,6 +594,18 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             {
                 StartCoroutine(LoadHUD());
                 StartCoroutine(LoadGoldArm());
+                if (firstLoad && !(bool)TimestopperProgress.ArmStatus(TProgress.hasArm))
+                {
+                    MonoSingleton<HudMessageReceiver>.Instance.SendHudMessage(
+                        "Somewhere in the depths of <color=#FF0000>Violence /// First</color>, a new <color=#FFFF23>golden</color> door appears",
+                        "", "", 2);
+                    messageTimer.done += () =>
+                    {
+                        MonoSingleton<HudMessageReceiver>.Instance.Invoke("Done", 0);
+                        firstLoad = false;
+                    };
+                    messageTimer.SetTimer(6, true);
+                }
             } else
             {
                 timeStopper = CStopTime(0);
@@ -754,18 +771,12 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 if (A.gameObject.transform.IsChildOf(Player.transform) && A.updateMode == AnimatorUpdateMode.Normal)
                     A.updateMode = AnimatorUpdateMode.UnscaledTime;
 
-            if (!(badMovementFix.Value || badMovementFix2.Value))
-                Player.GetComponent<NewMovement>().walkSpeed = 360;
-            if (!badMovementFix2.Value)
-            {
-                Player.GetComponent<NewMovement>().jumpPower = 43;
-                Player.GetComponent<NewMovement>().wallJumpPower = 64;
-            }
             Player.GetComponent<Playerstopper>().Awake();
             if (speed == 0)
             {
                 Time.timeScale = 0;
                 realTimeScale = 0;
+                playerTimeScale = 1;
                 yield break;
             }
             do
@@ -786,12 +797,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 musicManager.GetComponent<MusicManager>().UnfilterMusic();
             PlayRespectiveSound(false);
             Physics.simulationMode = SimulationMode.FixedUpdate;
-            if (badMovementFix.Value || badMovementFix2.Value)
-                Player.GetComponent<NewMovement>().walkSpeed = 700;
-            else
-                Player.GetComponent<NewMovement>().walkSpeed = 360;
-            Player.GetComponent<NewMovement>().jumpPower = 90;
-            Player.GetComponent<NewMovement>().wallJumpPower = 150;
             foreach (Animator A in FindObjectsOfType<Animator>())  // Make animations not work in stopped time when time isn't stopped
                 if (A.gameObject.transform.IsChildOf(Player.transform) && A.updateMode == AnimatorUpdateMode.UnscaledTime)
                     A.updateMode = AnimatorUpdateMode.Normal;
@@ -854,8 +859,10 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 TimeColor.b = 0;
             }
         }
+
         private void Update()
         {
+            messageTimer.Update();
             if (SceneManager.GetActiveScene().name == "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ ||
             SceneManager.GetActiveScene().name == "Bootstrap" ||
             SceneManager.GetActiveScene().name == "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)   {
@@ -976,19 +983,28 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Image>().sprite =
                                 armInfoGold.transform.Find("Panel/Back Button").GetComponent<UnityEngine.UI.Image>().sprite;
             armInfoGold.transform.Find("Panel/Description").GetComponent<TMPro.TextMeshProUGUI>().text = Timestopper.ARM_DESCRIPTION + (string)TimestopperProgress.ArmStatus(TProgress.upgradeText);
-            if (GameProgressSaver.GetMoney() > (int)TimestopperProgress.ArmStatus(TProgress.upgradeCost))
+            if ((int)TimestopperProgress.ArmStatus(TProgress.upgradeCount) < Timestopper.maxUpgrades.Value)
             {
-                armInfoGold.transform.Find("Panel/Purchase Button/Text").GetComponent<TextMeshProUGUI>().text = TimestopperProgress.ArmStatus(TProgress.upgradeCost).ToString() + " <color=#FF4343>P</color>";
-                armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<ShopButton>().failure = false;
-                armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Button>().interactable = true;
-                armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Image>().color = Color.white;
-            }
-            else
+                if (GameProgressSaver.GetMoney() > (int)TimestopperProgress.ArmStatus(TProgress.upgradeCost))
+                {
+                    armInfoGold.transform.Find("Panel/Purchase Button/Text").GetComponent<TextMeshProUGUI>().text = TimestopperProgress.ArmStatus(TProgress.upgradeCost).ToString() + " <color=#FF4343>P</color>";
+                    armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<ShopButton>().failure = false;
+                    armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Button>().interactable = true;
+                    armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Image>().color = Color.white;
+                }
+                else
+                {
+                    armInfoGold.transform.Find("Panel/Purchase Button/Text").GetComponent<TextMeshProUGUI>().text = "<color=#FF4343>" + TimestopperProgress.ArmStatus(TProgress.upgradeCost).ToString() + " P</color>";
+                    armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<ShopButton>().failure = true;
+                    armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Button>().interactable = false;
+                    armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Image>().color = Color.red;
+                }
+            } else
             {
-                armInfoGold.transform.Find("Panel/Purchase Button/Text").GetComponent<TextMeshProUGUI>().text = "<color=#FF4343>" + TimestopperProgress.ArmStatus(TProgress.upgradeCost).ToString() + " P</color>";
+                armInfoGold.transform.Find("Panel/Purchase Button/Text").GetComponent<TextMeshProUGUI>().text = "<color=#FFEE43>MAX</color>";
                 armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<ShopButton>().failure = true;
                 armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Button>().interactable = false;
-                armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Image>().color = Color.red;
+                armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Image>().color = Color.gray;
             }
         }
         public void OnTriggerStay(Collider col)
@@ -1067,104 +1083,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
     }
 
-    public class ConstraintSaver : MonoBehaviour    // Added to all Rigidbodies when time stops
-    {
-        public bool gravity = false;
-        public bool frozen = false;
-        public bool byDio = false;
-        public bool isCoin = false;
-        private float localScale = 1.0f; // local timescale, so that coins freeze slowly
-        public Vector3 unscaledVelocity = new Vector3(0, 0, 0);
-        public Vector3 unscaledAngularVelocity = new Vector3(0,0,0);
-        public Rigidbody R;
-
-        public void Freeze ()
-        {
-            R = gameObject.GetComponent<Rigidbody>();
-            if (gameObject.GetComponent<Coin>() != null)
-                isCoin = true;
-            if (R != null)
-            {
-                if (!R.isKinematic)
-                {
-                    unscaledVelocity = R.velocity;
-                    unscaledAngularVelocity = R.angularVelocity;
-                    if (R.useGravity)
-                    {
-                        R.useGravity = false;
-                        gravity = true;
-                    }
-                    frozen = true;
-                }
-            }
-            if (Timestopper.realTimeScale == 0.0f)
-            {
-                byDio = true;
-            }
-        }
-
-        private void UnFreeze()
-        {
-            if (R != null)
-            {
-                if (!R.isKinematic)
-                {
-                    localScale = 1.0f;
-                    R.velocity = unscaledVelocity * (Time.unscaledDeltaTime / Time.fixedUnscaledDeltaTime);
-                    R.angularVelocity = unscaledAngularVelocity;
-                    if (gravity)
-                        R.useGravity = true;
-                    gravity = false;
-                    frozen = false;
-                }
-            } else
-                R = gameObject.GetComponent<Rigidbody>();
-        }
-
-        public void Update()
-        {
-            if (isCoin)
-            {
-                gameObject.GetComponent<SphereCollider>().enabled = true;
-                gameObject.GetComponent<BoxCollider>().enabled = true;
-                gameObject.GetComponent<Coin>().Invoke("StartCheckingSpeed", 0);
-                isCoin = false;
-            }
-            if (Timestopper.TimeStop && R != null)
-            {
-                if (!frozen)
-                {
-                    Freeze();
-                }
-                if (R != null)
-                {
-                    if (!R.isKinematic)
-                    {
-                        R.useGravity = false;
-                        R.AddForce(-R.GetAccumulatedForce(Time.unscaledDeltaTime));
-                        if (gravity)
-                            unscaledVelocity += R.velocity - (unscaledVelocity - Physics.gravity*Time.unscaledDeltaTime) * localScale;
-                        else
-                            unscaledVelocity += R.velocity - (unscaledVelocity) * localScale;
-                        unscaledAngularVelocity += R.angularVelocity - unscaledAngularVelocity * localScale;
-                        R.velocity = unscaledVelocity * localScale;
-                        R.angularVelocity = unscaledAngularVelocity * localScale;
-                        if (byDio)
-                            localScale -= Time.unscaledDeltaTime / Timestopper.affectSpeed.Value;
-                        else
-                            localScale -= Time.unscaledDeltaTime / Timestopper.stopSpeed.Value;
-                        if (localScale < 0)
-                            localScale = 0.0f;
-                    }
-                } else
-                    R = gameObject.GetComponent<Rigidbody>();
-            }
-            else if (frozen && R != null)
-            {
-                UnFreeze();
-            }
-        }
-    }
+    
    
 
     // ################################################  PATCHWORK  ######################################################## \\
@@ -1175,24 +1094,31 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     {
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, string name = "CODE")
         {
-            var deltaGetter = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
-            var deltaFixedGetter = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
-            var unscaledGetter = AccessTools.Field(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
+            var deltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
+            var fixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
+            var playerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
             //var unscaledGetter = AccessTools.PropertyGetter(typeof(Time), nameof(Time.unscaledDeltaTime));
-            var unscaledFixedGetter = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedUnscaledDeltaTime));
+            //var fixedUnscaledDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedUnscaledDeltaTime));
+            var playerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
             ManualLogSource mls = BepInEx.Logging.Logger.CreateLogSource(Timestopper.GUID);
 
             mls.LogWarning($"Transpiling " + name + "...");
             foreach (var i in instructions)
             {
-                if (i.Calls(deltaGetter))
+                if (i.Calls(deltaTimeG))
                 {
-                    yield return new CodeInstruction(OpCodes.Ldsfld, unscaledGetter);
+                    var newInst = new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
                     //mls.LogInfo($"modified deltaTime");
                 }
-                else if (i.Calls(deltaFixedGetter))
+                else if (i.Calls(fixedDeltaTimeG))
                 {
-                    yield return new CodeInstruction(OpCodes.Call, unscaledFixedGetter);
+                    var newInst = new CodeInstruction(OpCodes.Call, playerFixedDeltaTimeG);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
                     //mls.LogInfo($"modified fixedDeltaTime");
                 }
                 else
@@ -1200,13 +1126,12 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     yield return i;
                 }
             }
-            //mls.LogWarning($"Transpiling done!");
         }
 
     }
 
-    //==================[ ALL THE PATCHWORK ]====================\\
-    [HarmonyPatch(typeof(WeaponCharges), "Update")] public class TranspileWeaponCharges { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Update");}
+    [HarmonyPatch(typeof(WeaponCharges), "Update")] public class TranspileWeaponCharges0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Update");}
+    [HarmonyPatch(typeof(WeaponCharges), "Charge")] public class TranspileWeaponCharges1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Charge");}
     [HarmonyPatch(typeof(GunControl), "Update")] public class TranspileGunControl { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[GunControl]=> Update");}
     [HarmonyPatch(typeof(Revolver), "Update")] public class TranspileRevolver0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Revolver]=> Update");}
     [HarmonyPatch(typeof(Revolver), "LateUpdate")] public class TranspileRevolver1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Revolver]=> LateUpdate");}
@@ -1217,12 +1142,12 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     [HarmonyPatch(typeof(Shotgun), "UpdateMeter")] public class TranspileShotgun1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Shotgun]=> UpdateMeter"); }
     [HarmonyPatch(typeof(Nailgun), "Update")] public class TranspileNailgun0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> Update"); }
     [HarmonyPatch(typeof(Nailgun), "UpdateZapHud")] public class TranspileNailgun1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> UpdateZpHud"); }
-    [HarmonyPatch(typeof(Nailgun), "FixedUpdate")] public class TranspileNailgun2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> FixedUpdate"); }
+    [HarmonyPatch(typeof(Nailgun), "FixedUpdate")] public class TranspileNailgun2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> FixedUpdate"); }
     [HarmonyPatch(typeof(Nailgun), "RefreshHeatSinkFill")] public class TranspileNailgun3 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> RefreshHeatSinkFill"); }
     [HarmonyPatch(typeof(RocketLauncher), "Update")] public class TranspileRocketLauncher0{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[RocketLauncher]=> Update");}
-    [HarmonyPatch(typeof(RocketLauncher), "FixedUpdate")] public class TranspileRocketLauncher1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[RocketLauncher]=> FixedUpdate");}
+    [HarmonyPatch(typeof(RocketLauncher), "FixedUpdate")] public class TranspileRocketLauncher1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[RocketLauncher]=> FixedUpdate");}
     [HarmonyPatch(typeof(NewMovement), "Update")] public class TranspileNewMovement0{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Update");}
-    [HarmonyPatch(typeof(NewMovement), "FixedUpdate")] public class TranspileNewMovement1{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> FixedUpdate");}
+    [HarmonyPatch(typeof(NewMovement), "FixedUpdate")] public class TranspileNewMovement1{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> FixedUpdate");}
     [HarmonyPatch(typeof(NewMovement), "Move")] public class TranspileNewMovement2{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Move");}
     [HarmonyPatch(typeof(NewMovement), "Jump")] public class TranspileNewMovement3{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Jump");}
     [HarmonyPatch(typeof(NewMovement), "Dodge")] public class TranspileNewMovement4{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Dodge");}
@@ -1233,16 +1158,16 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     [HarmonyPatch(typeof(NewMovement), "DetachSlideScrape")] public class TranspileNewMovement9{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> DetachSlideScrape");}
     [HarmonyPatch(typeof(FistControl), "Update")] public class TranspileFistControl{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[FistControl]=> Update");}
     [HarmonyPatch(typeof(GroundCheck), "Update")] public class TranspileGroundCheck0{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> Update");}
-    [HarmonyPatch(typeof(GroundCheck), "FixedUpdate")] public class TranspileGroundCheck1{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> FixedUpdate");}
+    [HarmonyPatch(typeof(GroundCheck), "FixedUpdate")] public class TranspileGroundCheck1{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> FixedUpdate");}
     [HarmonyPatch(typeof(GroundCheck), MethodType.Constructor)] public class TranspileGroundCheck2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "Constructor<GroundCheck>"); }
-    [HarmonyPatch(typeof(ClimbStep), "FixedUpdate")] public class TranspileClimbStep{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[ClimbStep]=> FixedUpdate");}
+    [HarmonyPatch(typeof(ClimbStep), "FixedUpdate")] public class TranspileClimbStep{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[ClimbStep]=> FixedUpdate");}
     [HarmonyPatch(typeof(VerticalClippingBlocker), "CalculateHeavyFallOffset")] public class TranspileVerticalClippingBlocker{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[VerticalClippingBlocker]=> CalculateHeavyFallOffset");}
     [HarmonyPatch(typeof(CameraController), "Update")] public class TranspileCameraController{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[CameraController]=> Update");}
     [HarmonyPatch(typeof(Punch), "Update")] public class TranspilePunch{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Punch]=> Update");}
     [HarmonyPatch(typeof(WalkingBob), "Update")] public class TranspileWalkingBob{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WalkingBob]=> Update");}
     [HarmonyPatch(typeof(StaminaMeter), "Update")] public class TranspileStaminaMeter{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[StaminaMeter]=> Update");}
     [HarmonyPatch(typeof(HealthBar), "Update")] public class TranspileHealthBar{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[HealthBar]=> Update");}
-    [HarmonyPatch(typeof(HurtZone), "FixedUpdate")] public class TranspileHurtZone{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[HurtZone]=> FixedUpdate");}
+    [HarmonyPatch(typeof(HurtZone), "FixedUpdate")] public class TranspileHurtZone{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HurtZone]=> FixedUpdate");}
     //[HarmonyPatch(typeof(Coin), "Update")] public class TranspileCoin{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Coin]=> Update");}
     [HarmonyPatch(typeof(SpriteController), "Awake")]
     class Patch
@@ -1252,6 +1177,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             Debug.Log("Unity, all awake is modified bro!");
             if (__instance.gameObject.layer != 0)
                 __instance.gameObject.layer = 0;
+            foreach(Transform child in __instance.GetComponentsInChildren<Transform>())
+                child.gameObject.layer = 0;
         }
     }
 
@@ -1316,14 +1243,45 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
     }
 
+    public class PrivateInsideTimer
+    {
+        private float time = 0;
+        private bool scaled = false;
+        public Action done;
+        public bool SetTimer(float _time, bool _scaled, bool force = false)
+        {
+            if (time <= 0 || force)
+            {
+                time = _time;
+                scaled = _scaled;
+                return true;
+            }
+            return false;
+        }
+        public void Update()
+        {
+            if (time == 0)
+                return;
+            if (scaled)
+                time -= Time.deltaTime;
+            else
+                time -= Time.unscaledDeltaTime;
+            if (time < 0)
+            {
+                time = 0;
+                done.Invoke();
+            }
+        }
+    }
+
     public class PrivateTimer : MonoBehaviour
     {
         private float time = 0;
         private bool scaled = false;
         public Action done;
-        public bool SetTimer(float _time, bool _scaled)
+        public bool SetTimer(float _time, bool _scaled, bool force = false)
         {
-            if (time <= 0)
+            if (time <= 0 || force)
             {
                 time = _time;
                 scaled = _scaled;
@@ -1355,12 +1313,176 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
         }
     }
-    public class FixedUpdateCaller : MonoBehaviour
+    public class ConstraintSaver : MonoBehaviour    // Added to all Rigidbodies when time stops
     {
-        public void LateUpdate()
+        public bool gravity = false;
+        public bool frozen = false;
+        public bool byDio = false;
+        public bool isCoin = false;
+        public bool isRocket = false;
+        public bool previousrocketfreeze = false;
+        private float localScale = 1.0f; // local timescale, so that coins freeze slowly
+        public Vector3 unscaledVelocity = new Vector3(0, 0, 0);
+        public Vector3 unscaledAngularVelocity = new Vector3(0, 0, 0);
+        public Rigidbody R;
+        private float time = 0;
+
+        public void Freeze()
+        {
+            if (gameObject.GetComponent<Grenade>() != null)
+            {
+                isRocket = gameObject.GetComponent<Grenade>().rocket;
+                //gameObject.AddComponent<FixedUpdateCaller>();
+                //GetComponent<FixedUpdateCaller>().enabled = false;
+            }
+            R = gameObject.GetComponent<Rigidbody>();
+            if (gameObject.GetComponent<Coin>() != null)
+                isCoin = true;
+            if (R != null)
+            {
+                if (!R.isKinematic)
+                {
+                    unscaledVelocity = R.velocity;
+                    unscaledAngularVelocity = R.angularVelocity;
+                    if (R.useGravity)
+                    {
+                        R.useGravity = false;
+                        gravity = true;
+                    }
+                    frozen = true;
+                }
+            }
+            if (GetComponent<Nail>() != null)
+            {
+                if (GetComponent<Nail>().sawblade || GetComponent<Nail>().chainsaw)
+                {
+                    if (GetComponent<FixedUpdateCaller>() == null)
+                        gameObject.AddComponent<FixedUpdateCaller>();
+                }
+            }
+            if (Timestopper.realTimeScale == 0.0f)
+            {
+                byDio = true;
+            }
+        }
+
+        private void UnFreeze()
+        {
+            if (R != null)
+            {
+                if (!R.isKinematic)
+                {
+                    localScale = 1.0f;
+                    R.velocity = unscaledVelocity;
+                    R.angularVelocity = unscaledAngularVelocity;
+                    if (gravity)
+                        R.useGravity = true;
+                    gravity = false;
+                    frozen = false;
+                }
+            }
+            else
+                R = gameObject.GetComponent<Rigidbody>();
+        }
+
+        public void Update()
         {
             if (Timestopper.TimeStop)
             {
+                if (!frozen)
+                    Freeze();
+                time += Time.unscaledDeltaTime;
+                if (time > Time.maximumDeltaTime)
+                    time = Time.maximumDeltaTime;
+                while (time >= Time.fixedDeltaTime)
+                {
+                    time -= Time.fixedDeltaTime;
+                    FakeFixedUpdate();
+                }
+            }
+            else if (frozen)
+                UnFreeze();
+        }
+
+        public void FakeFixedUpdate()
+        {
+            if (isCoin)
+            {
+                gameObject.GetComponent<SphereCollider>().enabled = true;
+                gameObject.GetComponent<BoxCollider>().enabled = true;
+                gameObject.GetComponent<Coin>().Invoke("StartCheckingSpeed", 0);
+                isCoin = false;
+            }
+            if (Timestopper.TimeStop && R != null)
+            {
+                //if (!frozen)
+                //{
+                //    Freeze();
+                //}
+                if (R != null)
+                {
+                    if (!R.isKinematic)
+                    {
+                        R.useGravity = false;
+                        unscaledVelocity += R.GetAccumulatedForce(Time.fixedDeltaTime);
+                        R.AddForce(-R.GetAccumulatedForce(Time.fixedDeltaTime));
+                        if (gravity)
+                            unscaledVelocity += R.velocity - (unscaledVelocity - Physics.gravity * Time.fixedDeltaTime) * localScale;
+                        else
+                            unscaledVelocity += R.velocity - (unscaledVelocity) * localScale;
+                        unscaledAngularVelocity += R.angularVelocity - unscaledAngularVelocity * localScale;
+                        R.velocity = unscaledVelocity * localScale;
+                        R.angularVelocity = unscaledAngularVelocity * localScale;
+                        if (!isRocket || !(MonoSingleton<WeaponCharges>.Instance && MonoSingleton<WeaponCharges>.Instance.rocketFrozen))
+                        {
+                            if (previousrocketfreeze)
+                            {
+                                previousrocketfreeze = false;
+                                MethodInfo MFixedUpdate = gameObject.GetComponent<Grenade>().GetType().GetMethod("FixedUpdate",
+                                BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                                MFixedUpdate.Invoke(gameObject.GetComponent<Grenade>(), null);
+                                transform.Find("FreezeEffect").gameObject.SetActive(false);
+                            }
+                            if (byDio)
+                                localScale -= Timestopper.playerDeltaTime / Timestopper.affectSpeed.Value;
+                            else
+                                localScale -= Timestopper.playerDeltaTime / Timestopper.stopSpeed.Value;
+                            if (localScale < 0)
+                                localScale = 0.0f;
+                        } else
+                        {
+                            MonoSingleton<WeaponCharges>.Instance.rocketFrozen = false;
+                            MethodInfo MFixedUpdate = gameObject.GetComponent<Grenade>().GetType().GetMethod("FixedUpdate",
+                                BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                            MFixedUpdate.Invoke(gameObject.GetComponent<Grenade>(), null);
+                            transform.Find("FreezeEffect").gameObject.SetActive(true);
+                            MonoSingleton<WeaponCharges>.Instance.rocketFrozen = true;
+                            previousrocketfreeze = true;
+                            if (localScale < 1)
+                                localScale += Timestopper.playerDeltaTime / Timestopper.stopSpeed.Value;
+                            if (localScale > 1)
+                                localScale = 1.0f;
+                        }
+                    }
+                }
+                else
+                    R = gameObject.GetComponent<Rigidbody>();
+            }
+            else if (frozen && R != null)
+            {
+                UnFreeze();
+            }
+        }
+    }
+    public class FixedUpdateCaller : MonoBehaviour
+    {
+        float time = 0;
+        public void Update()
+        {
+            if (Timestopper.TimeStop)
+            {
+                time += Timestopper.playerDeltaTime;
+                Timestopper.fixedCall = true;
                 if (gameObject.GetComponent<ShotgunHammer>() != null) // JackHammer Fix
                 {
                     //AccessTools.Field(typeof(ShotgunHammer), "pulledOut").SetValue(gameObject.GetComponent<ShotgunHammer>(),
@@ -1372,20 +1494,27 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     //AccessTools.Field(typeof(ShotgunHammer), "enviroGibSpawnCooldown").SetValue(gameObject.GetComponent<ShotgunHammer>(),
                     //    (float)AccessTools.Field(typeof(ShotgunHammer), "enviroGibSpawnCooldown").GetValue(gameObject.GetComponent<ShotgunHammer>()) + Time.unscaledDeltaTime);
                 }
-                if (gameObject.GetComponent<Nailgun>() != null)
+                if (time > Time.maximumDeltaTime)
+                    time = Time.maximumDeltaTime;
+                while (time >= Time.fixedDeltaTime)
                 {
-                    foreach(ScaleNFade C in gameObject.GetComponentsInChildren<ScaleNFade>())
+                    time -= Time.fixedDeltaTime;
+                    if (gameObject.GetComponent<Nailgun>() != null)
                     {
-                        Destroy(C.gameObject);
+                        foreach(ScaleNFade C in gameObject.GetComponentsInChildren<ScaleNFade>())
+                        {
+                            Destroy(C.gameObject);
+                        }
+                    }
+                    foreach(Component C in gameObject.GetComponents(typeof(MonoBehaviour)))
+                    {
+                        MethodInfo MFixedUpdate = C.GetType().GetMethod("FixedUpdate",
+                                        BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                        if (MFixedUpdate != null)
+                            MFixedUpdate.Invoke(C, null);
                     }
                 }
-                foreach(Component C in gameObject.GetComponents(typeof(MonoBehaviour)))
-                {
-                    MethodInfo MFixedUpdate = C.GetType().GetMethod("FixedUpdate",
-                                    BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (MFixedUpdate != null)
-                        MFixedUpdate.Invoke(C, null);
-                }
+                Timestopper.fixedCall = false;
             }
         }
     }
@@ -1399,6 +1528,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         public bool movementHack = true;
         public GameObject TheCube;
         public bool menuOpen = false;
+        public PrivateInsideTimer NotJumpingTimer = new PrivateInsideTimer();
+        public PrivateInsideTimer JumpReadyTimer = new PrivateInsideTimer();
 
         public void FixedUpdateFix(Transform target)
         {
@@ -1427,6 +1558,14 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 GameObject.Find("GameController").gameObject.AddComponent<FixedUpdateCaller>();
             }
             movement = gameObject.GetComponent<NewMovement>();
+            JumpReadyTimer.done += () =>
+            {
+                movement.StartCoroutine("JumpReady");
+            };
+            NotJumpingTimer.done += () =>
+            {
+                movement.StartCoroutine("NotJumping");
+            };
         }
         public GameObject FindRootGameObject(string name)
         {
@@ -1439,9 +1578,10 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         public void EndParry()
         {
-            Timestopper.mls.LogWarning("Parry Timer Ended!");
+            Timestopper.mls.LogWarning("Parry Timer Ended! walking: " + GetComponent<NewMovement>().walking);
             Timestopper.playerTimeScale = 1;
-            Timestopper.StopTime(0);
+            GetComponent<NewMovement>().walking = false;
+            //Timestopper.StopTime(0);
             Timestopper.MenuCanvas.transform.Find("ParryFlash").gameObject.SetActive(false);
             foreach (Transform child in Timestopper.Player.transform.Find("Main Camera/New Game Object").transform)
                 Destroy(child.gameObject);
@@ -1463,7 +1603,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     Timestopper.MenuCanvas.GetComponent<PrivateTimer>().done += EndParry;
                 }
                 Timestopper.playerTimeScale = 0;
-                Timestopper.MenuCanvas.GetComponent<PrivateTimer>().SetTimer(0.18f, false);
+                Time.timeScale = 0;
+                GetComponent<NewMovement>().walking = false;
+                Timestopper.MenuCanvas.GetComponent<PrivateTimer>().SetTimer(0.3f, false);
             }
         }
         private void HandleMenuPause()
@@ -1483,20 +1625,30 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 }
             }
         }
+        public void FixedUpdate()
+        {
+            if (Timestopper.TimeStop)
+            {
+                Time.timeScale = Timestopper.realTimeScale;
+                HandleParry();
+                if (Timestopper.playerDeltaTime > 0)
+                    Physics.Simulate(Time.fixedDeltaTime*(1-Timestopper.realTimeScale));   // Manually simulate Rigidbody physics
+            }
+        }
         private void Update()
         {
+            JumpReadyTimer.Update();
+            NotJumpingTimer.Update();
             if (Timestopper.specialMode.Value)
             {
                 if (UnityInput.Current.GetKeyDown(KeyCode.J))
                 {
-                    GameProgressSaver.AddMoney(10000);
+                    GameProgressSaver.AddMoney((int)TimestopperProgress.ArmStatus(TProgress.upgradeCost));
                     Timestopper.mls.LogInfo("MONEY MONEY MONEY");
                 }
             }
             if (Timestopper.TimeStop)
             {
-                Time.timeScale = Timestopper.realTimeScale;
-                HandleParry();
                 HandleMenuPause();
                 if (Timestopper.realTimeScale < Timestopper.blindScale.Value && !ULTRAKILL.Cheats.BlindEnemies.Blind)
                 {
@@ -1521,15 +1673,18 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     }
                 }
                 // The JumpBug fix \\
-                if (movement.jumping && JumpCooldown <= 0) {
-                    JumpCooldown = 0.5f;   }
-                if (JumpCooldown > Time.unscaledDeltaTime)  {
-                    movement.StartCoroutine("JumpReady");
-                    JumpCooldown -= Time.unscaledDeltaTime;}
-                else  {
-                    JumpCooldown = 0.0f;
-                    movement.StartCoroutine("JumpReady");
-                    movement.jumping = false;   }
+                if (movement.jumping && movement.falling && !movement.boost)
+                {
+                    JumpReadyTimer.SetTimer(0.2f, false);
+                    NotJumpingTimer.SetTimer(0.25f, false);
+                }
+                //if (JumpCooldown > Time.unscaledDeltaTime)  {
+                //    movement.StartCoroutine("JumpReady");
+                //    JumpCooldown -= Time.unscaledDeltaTime;}
+                //else  {
+                //    JumpCooldown = 0.0f;
+                //    movement.StartCoroutine("JumpReady");
+                //    movement.jumping = false;   }
             } else // if time not stop
             {
                 if (ULTRAKILL.Cheats.BlindEnemies.Blind)
@@ -1555,9 +1710,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                         if (A.gameObject.transform.IsChildOf(gameObject.transform) && A.updateMode == AnimatorUpdateMode.UnscaledTime)
                             A.updateMode = AnimatorUpdateMode.Normal;
                 }
-                Timestopper.playerDeltaTime = Time.unscaledDeltaTime * Timestopper.playerTimeScale;
-                if (Timestopper.playerDeltaTime > 0)
-                    Physics.Simulate(Timestopper.playerDeltaTime);   // Manually simulate Rigidbody physics
                 foreach (ParticleSystem A in FindObjectsOfType<ParticleSystem>())   // Make plarticles work in stopped time when time is stopped
                 {
                     if (A.gameObject.transform.IsChildOf(gameObject.transform) && A.main.useUnscaledTime == false)
@@ -1566,11 +1718,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                         main.useUnscaledTime = true;
                     }
                 }
-            }
-            else
-            {
-                Timestopper.playerDeltaTime = Time.deltaTime;
-
             }
         }
     }
