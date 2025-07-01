@@ -1,6 +1,28 @@
 # CHANGELOG:
 
 <details>
+  <summary>0.9.9</summary>
+
+  ### The Integration Update!
+  - Added new Style "TIME STOP" which is worth 200 points, subject to change
+  - JackHammer now works although a bit janky
+  - Added Alt and Alt White HUD elements for the Time Juice
+  - Time Juice now resets properly when died or reset to checkpoint
+  - Time Juice bar now doesn't overlap with the Speedometer
+  - The Speedometer now updates as intended in stopped time
+  - Fixed a little bug with Compatability with CyberGrindMusicExplorer
+
+  ### technical changes
+  - Patched TimeSince to use unscaledDeltaTime when Timestopper.unscaleTimeSince is true. Used in FixeUpdateCaller when calling FixedUpdate manually.
+  - Time Juice resets now use StatsManager.checkpointRestart
+  - Speedometer and other HUD elements which overlapped with Time Juice bar are now moved instead of set to position
+  - More integration with already there Ultrakill classes and structs
+
+</details>
+
+---
+
+<details>
   <summary>0.9.8</summary>
 
   ### The Freezeframe Comeback!

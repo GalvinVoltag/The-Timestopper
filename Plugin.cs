@@ -16,6 +16,7 @@ using UnityEngine.Windows;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
 using UnityEngine.PlayerLoop;
+using UnityEngine.InputSystem;
 using UnityEngine.AddressableAssets;
 using System.Reflection.Emit;
 using System.Globalization;
@@ -32,10 +33,12 @@ using System.Runtime.CompilerServices;
 using UnityEngine.UI;
 using BepInEx.Bootstrap;
 using System.CodeDom;
+using UnityEngine.Animations;
+using System.Diagnostics;
+using SettingsMenu.Components.Pages;
 
 namespace The_Timestopper
 {
-
     public enum TProgress { hasArm, equippedArm, firstWarning, upgradeCount, maxTime, upgradeText, upgradeCost };
 
     [Serializable]
@@ -46,6 +49,10 @@ namespace The_Timestopper
         public bool firstWarning = false;
         public int upgradeCount = 0;
         public float maxTime = 3.0f;
+        public int upgradeCost
+        {
+            get { return 150000 + upgradeCount * 66000; }
+        }
         private const string PROGRESS_FILE = "timestopper.state";
         private static TimestopperProgress inst;
         private static string GenerateTextBar(char c, int b)
@@ -77,6 +84,7 @@ namespace The_Timestopper
         }
         public static void UpgradeArm()
         {   TimestopperProgress progress = Read();
+            GameProgressSaver.AddMoney(-progress.upgradeCost);
             progress.maxTime += 1 + 1 / (progress.upgradeCount + 0.5f);
             progress.upgradeCount++;
             Write(progress);
@@ -166,7 +174,7 @@ namespace The_Timestopper
     {
         public const string GUID = "TheTimestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "0.9.8";
+        public const string Version = "0.9.9";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -197,7 +205,7 @@ Takes time to recharge, can be upgraded through the terminals.
 
         // vvvvvvvvvvvvv REFERENCES vvvvvvvvvvvvvvvvvvvvvv\\
         private FistControl Fist;
-        private GameObject TimeHUD;
+        private GameObject[] TimeHUD = new GameObject[3];
         public static GameObject Player;
         public static GameObject GoldArm;
         public static GameObject musicManager;
@@ -218,6 +226,9 @@ Takes time to recharge, can be upgraded through the terminals.
         public static bool fixedCall = false;
         public static bool parryWindow = false;
         public static bool firstLoad = true;
+        public static bool cybergrind = false;
+        public static int cybergrindWave = 0;
+        public static bool UnscaleTimeSince = false;
         public static PrivateInsideTimer messageTimer = new PrivateInsideTimer();
         public static float playerDeltaTime {
             get { 
@@ -264,6 +275,7 @@ Takes time to recharge, can be upgraded through the terminals.
         public static ConfigEntry<float> lowerTreshold; //2.0f
         public static ConfigEntry<float> blindScale; //0.4f
         public static ConfigEntry<float> refillMultiplier; //0.12f
+        public static ConfigEntry<float> bonusTimeForParry;
         public static ConfigEntry<float> antiHpMultiplier;
 
 
@@ -296,6 +308,7 @@ Takes time to recharge, can be upgraded through the terminals.
                 blindScale = Config.Bind<float>("{TECHNICAL STUFF}", "! BlindScale !", 0.2f, "Timescale where enemies can't see you.");
                 refillMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! RefillMultiplier !", 0.09f, "Time juice amount you get per second.");
                 antiHpMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! AntiHPMultiplier !", 20, "How fast the hard damage per second builds in stopped time.");
+                bonusTimeForParry = Config.Bind<float>("{TECHNICAL STUFF}", "! BonusTimeJuicePerParry !", 1, "How much time juice does parrying outside stopped time refill.");
 
                 config = new ConfigBuilder(GUID, Name);
                 config.BuildAll();
@@ -534,16 +547,42 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 elapsedTime += Time.unscaledDeltaTime;
                 yield return null;
             } while (Player.transform.Find("Main Camera/HUD Camera/HUD/GunCanvas/StatsPanel/Filler/AltRailcannonPanel") == null);
-            TimeHUD = Instantiate(Player.transform.Find("Main Camera/HUD Camera/HUD/GunCanvas/StatsPanel/Filler/AltRailcannonPanel").gameObject,
+            TimeHUD[0] = Instantiate(Player.transform.Find("Main Camera/HUD Camera/HUD/GunCanvas/StatsPanel/Filler/AltRailcannonPanel").gameObject,
                         Player.transform.Find("Main Camera/HUD Camera/HUD/GunCanvas/StatsPanel/Filler"));
-            TimeHUD.SetActive(true);
-            TimeHUD.name = "Golden Time";
-            TimeHUD.transform.localPosition = new Vector3(0f, 124.5f, 0f);
-            TimeHUD.transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount = 0;
-            TimeHUD.transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().color = TimeColor;
+            TimeHUD[0].SetActive(true);
+            TimeHUD[0].name = "Golden Time";
+            TimeHUD[0].transform.localPosition = new Vector3(0f, 124.5f, 0f);
+            TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount = 0;
+            TimeHUD[0].transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().color = TimeColor;
             Sprite mm = Sprite.Create(armGoldLogo, new Rect(0, 0, 512, 512), new Vector2(256, 256));
-            TimeHUD.transform.Find("Icon").gameObject.GetComponent<UnityEngine.UI.Image>().sprite = mm;
+            TimeHUD[0].transform.Find("Icon").gameObject.GetComponent<UnityEngine.UI.Image>().sprite = mm;
+            HudController.Instance.speedometer.gameObject.transform.localPosition += new Vector3(0, 64, 0);
             mls.LogInfo("Golden Time Bar created successfully.");
+            do
+            {
+                if (elapsedTime > 5)
+                {
+                    mls.LogError("Golden Time Alt HUD creation failed after 5 seconds!");
+                    yield break;
+                }
+                elapsedTime += Time.unscaledDeltaTime;
+                yield return null;
+            } while (FindRootGameObject("Canvas")?.transform.Find("Crosshair Filler/AltHud/Filler/Speedometer") == null);
+            TimeHUD[1] = Instantiate(FindRootGameObject("Canvas").transform.Find("Crosshair Filler/AltHud/Filler/Speedometer").gameObject,
+                                            FindRootGameObject("Canvas").transform.Find("Crosshair Filler/AltHud/Filler"));
+            TimeHUD[2] = Instantiate(FindRootGameObject("Canvas").transform.Find("Crosshair Filler/AltHud (2)/Filler/Speedometer").gameObject,
+                                        FindRootGameObject("Canvas").transform.Find("Crosshair Filler/AltHud (2)/Filler"));
+
+            TimeHUD[1].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().color = new Color(1, 0.9f, 0.2f);
+            TimeHUD[1].transform.Find("Title").GetComponent<TextMeshProUGUI>().text = "TIME";
+            TimeHUD[1].transform.localPosition = new Vector3(360, -360, 0);
+            Destroy(TimeHUD[1].GetComponent<Speedometer>());
+            TimeHUD[1].name = "Time Juice";
+            TimeHUD[2].transform.Find("Title").GetComponent<TextMeshProUGUI>().text = "TIME";
+            TimeHUD[2].transform.localPosition = new Vector3(360, -360, 0);
+            Destroy(TimeHUD[2].GetComponent<Speedometer>());
+            TimeHUD[2].name = "Time Juice";
+            mls.LogInfo("Golden Time Alt HUD created successfully.");
             yield break;
         }
         public IEnumerator LoadGoldArm()
@@ -576,6 +615,11 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             mls.LogInfo("Golden Arm created successfully.");
             yield break;
         }
+        public static void ResetGoldArm()
+        {
+            TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
+            StartTime(0);
+        }
         public GameObject FindRootGameObject(string name)
         {
             foreach (GameObject G in SceneManager.GetActiveScene().GetRootGameObjects())
@@ -594,6 +638,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             {
                 StartCoroutine(LoadHUD());
                 StartCoroutine(LoadGoldArm());
+                StatsManager.checkpointRestart += ResetGoldArm;
                 if (firstLoad && !(bool)TimestopperProgress.ArmStatus(TProgress.hasArm))
                 {
                     MonoSingleton<HudMessageReceiver>.Instance.SendHudMessage(
@@ -606,6 +651,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     };
                     messageTimer.SetTimer(6, true);
                 }
+                MonoSingleton<StyleHUD>.Instance.RegisterStyleItem("timestopper.timestop", "<color=#FFCF21>TIME STOP</color>");
             } else
             {
                 timeStopper = CStopTime(0);
@@ -681,6 +727,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             // Cybergrind Music Explorer = Compatability
             if (scene.name == "9240e656c89994d44b21940f65ab57da" && Chainloader.PluginInfos.ContainsKey("dev.flazhik.jukebox"))
             {
+                cybergrind = true;
                 Type Comp = Type.GetType("Jukebox.Components.NowPlayingHud, Jukebox");
                 if (Comp != null)
                 {   Component C = FindObjectOfType(Comp) as Component;
@@ -688,6 +735,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     else mls.LogError("Component C is null!");
                 }
                 else mls.LogError("Could not get Jukebox.Components.NowPlayingHud");
+            } else if (Chainloader.PluginInfos.ContainsKey("dev.flazhik.jukebox") ||!Chainloader.PluginInfos.ContainsKey("dev.flazhik.jukebox"))
+            {
+                cybergrind = false;
             }
         }
         public void OnSceneUnloaded(Scene scene)
@@ -812,6 +862,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 realTimeScale += Time.unscaledDeltaTime / speed;
                 yield return null;
             } while (Time.timeScale < 1);
+            MonoSingleton<StyleHUD>.Instance.AddPoints(200, "timestopper.timestop");
             Time.timeScale = 1;
             realTimeScale = 1;
             yield break;
@@ -862,6 +913,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
 
         private void Update()
         {
+            //if (MonoSingleton<InputManager>.Instance.InputSource.Actions.UI.Navigate.ReadValue<Vector2>().x == 1)
+            //    mls.LogInfo("input: ok!");
             messageTimer.Update();
             if (SceneManager.GetActiveScene().name == "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ ||
             SceneManager.GetActiveScene().name == "Bootstrap" ||
@@ -869,16 +922,26 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
                 return;
             }
+            if (cybergrind)
+            {
+                //mls.LogInfo("cybergrind");
+                if (cybergrindWave != MonoSingleton<EndlessGrid>.Instance.currentWave)
+                {
+                    //mls.LogInfo("wave done");
+                    TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
+                    cybergrindWave = MonoSingleton<EndlessGrid>.Instance.currentWave;
+                }
+            }
             PreventNull();
             if (Player == null)
                 return;
-            if (Player.GetComponent<NewMovement>().dead)
-            {
-                TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
-            }
+            //if (Player.GetComponent<NewMovement>().dead)
+            //{
+            //    TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
+            //}
             EnsureBundle();
             // if (pressed timestop key or ran out of timestop juics) and Timestopper is equipped
-            if ((UnityInput.Current.GetKeyDown(stopKey.Value) && Player.transform.Find("Main Camera/Punch/Arm Gold") != null && (bool)TimestopperProgress.ArmStatus(TProgress.equippedArm))
+            if (((UnityInput.Current.GetKeyDown(stopKey.Value)) && Player.transform.Find("Main Camera/Punch/Arm Gold") != null && (bool)TimestopperProgress.ArmStatus(TProgress.equippedArm))
                 || (TimeStop && TimeLeft <= 0.0f)
                 || (Player.GetComponent<NewMovement>().dead && TimeStop) )
             {
@@ -911,22 +974,35 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             ///////////////////////////////////////// UPDATE THE HUD \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
             if (TimeHUD != null)
             {
-                Color G = TimeHUD.transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().color;
-                float F = TimeHUD.transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount;
-                TimeHUD.transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().enabled = true;
-                TimeHUD.transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().enabled = true;
-                TimeHUD.transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().color
+                Color G = TimeHUD[0].transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().color;
+                float F = TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount;
+                TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().enabled = true;
+                TimeHUD[0].transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().enabled = true;
+                TimeHUD[0].transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().color
                     = (G*5 + TimeColor)*(Time.unscaledDeltaTime) / (6*Time.unscaledDeltaTime);
-                TimeHUD.transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount
+                TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount
                     = (F*8 + (TimeLeft / (float)TimestopperProgress.ArmStatus(TProgress.maxTime)))*(Time.unscaledDeltaTime) / (9*Time.unscaledDeltaTime);
                 if ((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm) && Player.transform.Find("Main Camera/HUD Camera/HUD/GunCanvas/GunPanel/Filler").gameObject.activeInHierarchy)
                 {
-                    TimeHUD.SetActive(true);
+                    TimeHUD[0].SetActive(true);
                 }
                 else
                 {
-                    TimeHUD.SetActive(false);
-                    TimeHUD.transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount = 0;
+                    TimeHUD[0].SetActive(false);
+                    TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount = 0;
+                }
+                if ((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm))
+                {
+                    TimeHUD[1].SetActive(true);
+                    TimeHUD[1].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, 4);
+                    TimeHUD[1].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().color = (G * 5 + TimeColor) * (Time.unscaledDeltaTime) / (6 * Time.unscaledDeltaTime);
+                    TimeHUD[2].SetActive(true);
+                    TimeHUD[2].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, 4);
+                }
+                else
+                {
+                    TimeHUD[1].SetActive(false);
+                    TimeHUD[2].SetActive(false);
                 }
             }
 
@@ -1130,6 +1206,49 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
 
     }
 
+    [HarmonyPatch(typeof(NewMovement), "Parry")]
+    public class ParryTimeFiller
+    {
+        [HarmonyPrefix]
+        static bool Prefix()
+        {
+            if (!Timestopper.TimeStop)
+                Timestopper.TimeLeft += Timestopper.bonusTimeForParry.Value;
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(TimeSince), "op_Implicit", new Type[] { typeof(TimeSince) })]
+    public class TimeSinceReplacer1
+    {
+        [HarmonyPrefix]
+        static bool Prefix(ref float __result, TimeSince ts)
+        {
+            if (Timestopper.UnscaleTimeSince)
+            {
+                __result = Time.unscaledTime - (float)AccessTools.Field(typeof(TimeSince), "time").GetValue(ts);
+                return false;
+            }
+            return true;
+        }
+    }
+    [HarmonyPatch(typeof(TimeSince), "op_Implicit", new Type[] { typeof(float) })]
+    public class TimeSinceReplacer2
+    {
+        [HarmonyPrefix]
+        static bool Prefix(ref TimeSince __result, float ts)
+        {
+            if (Timestopper.UnscaleTimeSince)
+            {
+                object result = new TimeSince();
+                AccessTools.Field(typeof(TimeSince), "time").SetValue(result, Time.unscaledTime - ts);
+                __result = (TimeSince)result;
+                return false;
+            }
+            return true;
+        }
+    }
+
     [HarmonyPatch(typeof(WeaponCharges), "Update")] public class TranspileWeaponCharges0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Update");}
     [HarmonyPatch(typeof(WeaponCharges), "Charge")] public class TranspileWeaponCharges1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Charge");}
     [HarmonyPatch(typeof(GunControl), "Update")] public class TranspileGunControl { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[GunControl]=> Update");}
@@ -1174,7 +1293,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     {
         static void Postfix(SpriteController __instance)
         {
-            Debug.Log("Unity, all awake is modified bro!");
+            //UnityEngine.Debug.Log("Unity, all awake is modified bro!");
             if (__instance.gameObject.layer != 0)
                 __instance.gameObject.layer = 0;
             foreach(Transform child in __instance.GetComponentsInChildren<Transform>())
@@ -1482,6 +1601,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             if (Timestopper.TimeStop)
             {
                 time += Timestopper.playerDeltaTime;
+                Timestopper.UnscaleTimeSince = true;
                 Timestopper.fixedCall = true;
                 if (gameObject.GetComponent<ShotgunHammer>() != null) // JackHammer Fix
                 {
@@ -1513,7 +1633,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                         if (MFixedUpdate != null)
                             MFixedUpdate.Invoke(C, null);
                     }
+
                 }
+                Timestopper.UnscaleTimeSince = true;
                 Timestopper.fixedCall = false;
             }
         }
@@ -1528,6 +1650,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         public bool movementHack = true;
         public GameObject TheCube;
         public bool menuOpen = false;
+        public bool frameLaterer = false;
         public PrivateInsideTimer NotJumpingTimer = new PrivateInsideTimer();
         public PrivateInsideTimer JumpReadyTimer = new PrivateInsideTimer();
 
@@ -1576,38 +1699,39 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
             return null;
         }
-        public void EndParry()
+        //public void EndParry()
+        //{
+        //    Timestopper.mls.LogWarning("Parry Timer Ended! walking: " + GetComponent<NewMovement>().walking);
+        //    Timestopper.playerTimeScale = 1;
+        //    GetComponent<NewMovement>().walking = false;
+        //    //Timestopper.StopTime(0);
+        //    Timestopper.MenuCanvas.transform.Find("ParryFlash").gameObject.SetActive(false);
+        //    foreach (Transform child in Timestopper.Player.transform.Find("Main Camera/New Game Object").transform)
+        //        Destroy(child.gameObject);
+        //}
+        private void HandleHitstop()
         {
-            Timestopper.mls.LogWarning("Parry Timer Ended! walking: " + GetComponent<NewMovement>().walking);
-            Timestopper.playerTimeScale = 1;
-            GetComponent<NewMovement>().walking = false;
-            //Timestopper.StopTime(0);
-            Timestopper.MenuCanvas.transform.Find("ParryFlash").gameObject.SetActive(false);
-            foreach (Transform child in Timestopper.Player.transform.Find("Main Camera/New Game Object").transform)
-                Destroy(child.gameObject);
-        }
-        private void HandleParry()
-        {
-            if (Timestopper.MenuCanvas == null) {
-                Timestopper.MenuCanvas = FindRootGameObject("Canvas");
-                return;
-            }
-            if (Timestopper.MenuCanvas.transform.Find("ParryFlash") == null) {
-                return;
-            }
-            if (Timestopper.MenuCanvas.transform.Find("ParryFlash").gameObject.activeSelf && Timestopper.playerTimeScale > 0)
-            {
-                if (Timestopper.MenuCanvas.GetComponent<PrivateTimer>() == null)
+            if ((float)AccessTools.Field(typeof(TimeController), "currentStop").GetValue(MonoSingleton<TimeController>.Instance) <= 0) {
+                if (Timestopper.playerTimeScale <= 0)
                 {
-                    Timestopper.MenuCanvas.AddComponent<PrivateTimer>();
-                    Timestopper.MenuCanvas.GetComponent<PrivateTimer>().done += EndParry;
+                    Timestopper.playerTimeScale = 1;
+                    //GetComponent<NewMovement>().walking = false;
+                    MonoSingleton<TimeController>.Instance.timeScaleModifier = 1;
+                    (AccessTools.Field(typeof(TimeController), "parryFlash").GetValue(MonoSingleton<TimeController>.Instance) as GameObject).SetActive(false);
+                    foreach (Transform child in Timestopper.Player.transform.Find("Main Camera/New Game Object").transform)
+                        Destroy(child.gameObject);
                 }
+                return;
+            }
+            else
+            {
+                frameLaterer = true;
                 Timestopper.playerTimeScale = 0;
                 Time.timeScale = 0;
-                GetComponent<NewMovement>().walking = false;
-                Timestopper.MenuCanvas.GetComponent<PrivateTimer>().SetTimer(0.3f, false);
+                //GetComponent<NewMovement>().walking = false;
             }
         }
+
         private void HandleMenuPause()
         {
             if (Timestopper.MenuCanvas == null) {
@@ -1630,15 +1754,16 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             if (Timestopper.TimeStop)
             {
                 Time.timeScale = Timestopper.realTimeScale;
-                HandleParry();
                 if (Timestopper.playerDeltaTime > 0)
                     Physics.Simulate(Time.fixedDeltaTime*(1-Timestopper.realTimeScale));   // Manually simulate Rigidbody physics
             }
         }
+        
         private void Update()
         {
             JumpReadyTimer.Update();
             NotJumpingTimer.Update();
+            HandleHitstop();
             if (Timestopper.specialMode.Value)
             {
                 if (UnityInput.Current.GetKeyDown(KeyCode.J))
@@ -1722,4 +1847,198 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
     }
 
+
+    // useless experiments that may come in handy
+    public class StaticMeshDuplicate : MonoBehaviour
+    {
+        public GameObject Run()
+        {
+            return StaticMeshDuplicator.Duplicate(gameObject);
+        }
+
+        public void SetAllUV(int channel, Vector2 uv)
+        {
+            switch (channel) { 
+                case 0:
+                    GetComponent<MeshFilter>().mesh.uv = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv, uv);
+                    break;
+                case 1:
+                    GetComponent<MeshFilter>().mesh.uv2 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv2, uv);
+                    break;
+                case 2:
+                    GetComponent<MeshFilter>().mesh.uv3 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv3, uv);
+                    break;
+                case 3:
+                    GetComponent<MeshFilter>().mesh.uv4 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv4, uv);
+                    break;
+                case 4:
+                    GetComponent<MeshFilter>().mesh.uv5 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv5, uv);
+                    break;
+                case 5:
+                    GetComponent<MeshFilter>().mesh.uv6 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv6, uv);
+                    break;
+                default: break;
+            
+            
+            }
+        }
+
+        public void AddAllUV(int channel, Vector2 uv)
+        {
+            switch (channel)
+            {
+                case 0:
+                    GetComponent<MeshFilter>().mesh.uv.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv, uv), (x, y) => x + y);
+                    break;
+                case 1:
+                    GetComponent<MeshFilter>().mesh.uv2.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv2, uv), (x, y) => x + y);
+                    break;
+                case 2:
+                    GetComponent<MeshFilter>().mesh.uv3.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv3, uv), (x, y) => x + y);
+                    break;
+                case 3:
+                    GetComponent<MeshFilter>().mesh.uv4.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv4, uv), (x, y) => x + y);
+                    break;
+                case 4:
+                    GetComponent<MeshFilter>().mesh.uv5.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv5, uv), (x, y) => x + y);
+                    break;
+                case 5:
+                    GetComponent<MeshFilter>().mesh.uv6.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv6, uv), (x, y) => x + y);
+                    break;
+                default: break;
+
+
+            }
+        }
+    }
+
+    public static class StaticMeshDuplicator
+    {
+        public static GameObject Duplicate(GameObject target)
+        {
+            GameObject G = UnityEngine.Object.Instantiate(target);
+            G.name = "Duplicate from Static";
+            var extractedMesh = ExtractSubMesh(target.GetComponent<MeshFilter>().sharedMesh, target.GetComponent<MeshRenderer>().subMeshStartIndex);
+            Material newMaterial = new Material(target.GetComponent<MeshRenderer>().material.shader);
+            //newMaterial.CopyPropertiesFromMaterial(target.GetComponent<MeshRenderer>().material);
+            newMaterial.mainTexture = target.GetComponent<MeshRenderer>().material.mainTexture;
+            G.GetComponent<MeshFilter>().mesh = extractedMesh;
+            Timestopper.mls.LogInfo("loaded shader: " + target.GetComponent<MeshRenderer>().material.shader.name);
+            G.GetComponent<MeshRenderer>().material = newMaterial;
+            G.transform.position = new Vector3(0, 2, 0);
+            //for (int i= 0; i < G.GetComponent<MeshFilter>().mesh.uv.Length; i++)
+            //{
+            //    G.GetComponent<MeshFilter>().mesh.uv[i].x /= G.GetComponent<MeshRenderer>().material.GetTexture(0).width;
+            //    G.GetComponent<MeshFilter>().mesh.uv[i].y /= G.GetComponent<MeshRenderer>().material.GetTexture(0).height; 
+            //}
+            return G;
+        }
+
+        public static T[] ExtractFromArray<T>(T[] array, int start, int length) {
+            T[] result = new T[length];
+            Array.Copy(array, start, result, 0, length);
+            return result;
+        }
+
+        public static T[] Populate<T>(T[] array, object value)
+        {
+            T[] t = new T[array.Length];
+            for (int i = 0; i < array.Length; i++)
+            {
+                t[i] = (T)value;
+            }
+            return t;
+        }
+
+        public static Mesh ExtractSubMesh(Mesh originalMesh, int subMeshIndex)
+        {
+            // Create a readable copy using GPU readback
+            Mesh readableMesh = CreateReadableMeshCopy(originalMesh);
+
+            // Extract the submesh
+            SubMeshDescriptor descriptor = readableMesh.GetSubMesh(subMeshIndex);
+
+            Mesh newMesh = new Mesh();
+            newMesh.vertices = ExtractFromArray(readableMesh.vertices, descriptor.firstVertex, descriptor.vertexCount);
+
+            var triangles = ExtractFromArray(readableMesh.triangles, descriptor.indexStart, descriptor.indexCount);
+            // Remap triangle indices to the new vertex array
+            for (int i = 0; i < triangles.Length; i++)
+                triangles[i] -= descriptor.firstVertex;
+            newMesh.triangles = triangles;
+
+            // Copy other attributes if available
+            if (readableMesh.normals != null && readableMesh.normals.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.normals = ExtractFromArray(readableMesh.normals, descriptor.firstVertex, descriptor.vertexCount);
+            else
+                newMesh.RecalculateNormals();
+
+            if (readableMesh.uv != null && readableMesh.uv.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.uv = ExtractFromArray(readableMesh.uv, descriptor.firstVertex, descriptor.vertexCount);
+            if (readableMesh.uv2 != null && readableMesh.uv2.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.uv2 = ExtractFromArray(readableMesh.uv2, descriptor.firstVertex, descriptor.vertexCount);
+            if (readableMesh.uv3 != null && readableMesh.uv3.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.uv3 = ExtractFromArray(readableMesh.uv3, descriptor.firstVertex, descriptor.vertexCount);
+            if (readableMesh.uv4 != null && readableMesh.uv4.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.uv4 = ExtractFromArray(readableMesh.uv4, descriptor.firstVertex, descriptor.vertexCount);
+            if (readableMesh.uv5 != null && readableMesh.uv5.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.uv5 = ExtractFromArray(readableMesh.uv5, descriptor.firstVertex, descriptor.vertexCount);
+            if (readableMesh.uv6 != null && readableMesh.uv6.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.uv6 = ExtractFromArray(readableMesh.uv6, descriptor.firstVertex, descriptor.vertexCount);
+            if (readableMesh.uv7 != null && readableMesh.uv7.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.uv7 = ExtractFromArray(readableMesh.uv7, descriptor.firstVertex, descriptor.vertexCount);
+            if (readableMesh.uv8 != null && readableMesh.uv8.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.uv8 = ExtractFromArray(readableMesh.uv8, descriptor.firstVertex, descriptor.vertexCount);
+
+
+            if (readableMesh.tangents != null && readableMesh.tangents.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
+                newMesh.tangents = ExtractFromArray(readableMesh.tangents, descriptor.firstVertex, descriptor.vertexCount);
+
+
+
+            newMesh.RecalculateBounds();
+            newMesh.name = $"Generated_From_SubMesh_{subMeshIndex}";
+
+            return newMesh;
+
+        }
+
+        private static Mesh CreateReadableMeshCopy(Mesh originalMesh)
+        {
+            // Method 1: Try using Graphics.CopyTexture equivalent for meshes
+            try
+            {
+                // Create a temporary render texture approach
+                var tempGO = new GameObject("TempMeshReader");
+                var mf = tempGO.AddComponent<MeshFilter>();
+                var mr = tempGO.AddComponent<MeshRenderer>();
+
+                mf.sharedMesh = originalMesh;
+                mr.material = new Material(Shader.Find("Standard"));
+
+                // Force Unity to make the mesh readable by accessing it through the renderer
+                var bounds = mr.bounds; // This forces some internal processing
+
+                // Create new mesh and copy what we can
+                Mesh newMesh = new Mesh();
+                newMesh.name = originalMesh.name + "_Readable";
+
+                // Use the SkinnedMeshRenderer approach to extract data
+                var tempSkinned = tempGO.AddComponent<SkinnedMeshRenderer>();
+                tempSkinned.sharedMesh = originalMesh;
+
+                // Bake the mesh to get readable data
+                var bakedMesh = new Mesh();
+                tempSkinned.BakeMesh(bakedMesh);
+
+                UnityEngine.Object.DestroyImmediate(tempGO);
+                return bakedMesh;
+            }
+            catch
+            {
+                // Fallback: try to create a basic copy
+                return originalMesh;
+            }
+        }
+    }
 }
