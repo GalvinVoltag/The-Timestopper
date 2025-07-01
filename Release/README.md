@@ -52,7 +52,7 @@ It is also very OP, balancing timestop without keeping it as cool as it is, is v
 
 
 
-
+[![Buymeacoffee](https://github.com/user-attachments/assets/866f5254-f5d5-403b-a7a2-7ab5238efcb6)](https://coff.ee/galvinvoltag)
 
 <details>
   <summary>Guide for dummies</summary>
