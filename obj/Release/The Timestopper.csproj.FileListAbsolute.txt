@@ -100,4 +100,3 @@ C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Release\The Ti
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Release\The Timestopper.csproj.CopyComplete
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Release\The Timestopper.dll
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Release\The Timestopper.pdb
-C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Release\Unity.ResourceManager.dll

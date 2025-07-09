@@ -36,6 +36,8 @@ using System.CodeDom;
 using UnityEngine.Animations;
 using System.Diagnostics;
 using SettingsMenu.Components.Pages;
+using SettingsMenu.Models;
+using SettingsMenu.Components;
 
 namespace TimelessConfig //work in progress custom config library: Timeless Config
 {
@@ -227,7 +229,7 @@ namespace The_Timestopper
     {
         public const string GUID = "TheTimestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "0.9.9-rc3";
+        public const string Version = "0.9.12";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -664,6 +666,40 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             mls.LogInfo("Golden Arm created successfully.");
             yield break;
         }
+        public IEnumerator ModifySettingsPage()
+        {
+            mls.LogWarning("creating instances...");
+            SettingsPage sp = SettingsPage.CreateInstance<SettingsPage>();
+            SettingsCategory sc = SettingsCategory.CreateInstance<SettingsCategory>();
+            SettingsItem item = SettingsItem.CreateInstance<SettingsItem>();
+            mls.LogWarning("Created instances");
+            sc.title = "Test Title";
+            item.buttonLabel = "test button";
+            item.label = "test";
+            item.name = "test";
+            item.style = SettingsItemStyle.Normal;
+            item.itemType = SettingsItemType.Toggle;
+            item.dropdownList = new string[] { "one", "two", "three" };
+            sc.items = new List<SettingsItem> { item };
+            sc.name = "TestCategory";
+            sc.title = "testCategory";
+            sc.titleDecorator = "++";
+            sp.categories = new SettingsCategory[] { sc };
+            sp.name = "TestPage";
+            mls.LogWarning("Waiting for menu");
+            while (FindRootGameObject("Canvas") == null)
+            {
+                yield return null;
+            }
+            mls.LogWarning("Waiting for options");
+            while (FindRootGameObject("Canvas").transform.Find("OptionsMenu/Pages/Graphics") == null)
+            {
+                yield return null;
+            }
+            SettingsPageBuilder test = FindRootGameObject("Canvas").transform.Find("OptionsMenu/Pages/Graphics").GetComponent<SettingsPageBuilder>();
+            typeof(SettingsPageBuilder).GetMethod("BuildPage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(test, new object[] { sp });
+            mls.LogWarning("Test Should Work");
+        }
         public static void ResetGoldArm()
         {
             TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
@@ -680,7 +716,13 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
+            //if (scene.name != "Bootstrap" && LoadDone &&
+            //    scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
+            //{
+            //    mls.LogWarning("Main Menu Detected");
+            //    StartCoroutine(ModifySettingsPage());
+            //}
+                TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
             if (scene.name != "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ &&
                 scene.name != "Bootstrap" && LoadDone &&
                 scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
