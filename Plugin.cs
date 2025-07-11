@@ -38,33 +38,59 @@ using System.Diagnostics;
 using SettingsMenu.Components.Pages;
 using SettingsMenu.Models;
 using SettingsMenu.Components;
+using System.Runtime.InteropServices;
 
 namespace TimelessConfig //work in progress custom config library: Timeless Config
 {
+    [Serializable]
     public class Config<T>
     {
         public static List<object> All = new List<object>();
 
-        bool modified = false;
-        string _path;
-        T _value;
-        T _default;
-        public Config(T value, string path = "", string name = "", string tooltip = "")
-        {
-            _value = value;
-            _default = value;
+        public const int NO_OP = -1;
+        public const int FAILURE = 0;
+        public const int SUCCESS = 1;
+
+        bool modified = false;  // if the value is modified, needed for when default values are updated
+        bool locked = false;    // if the setting can be changed from the settings menu
+        string _path;           // path of the setting in the menu
+        string _name;           // name of the setting in the menu
+        string _tooltip;        // tip of the setting in the menu
+        Type _type;              // type of the config
+        T _value;               // current value
+        T _default;             // default value
+        public Config(T defaultvalue, bool islocked = false, string path = "", string name = "", string tooltip = "") {
+            _value = defaultvalue;
+            _default = defaultvalue;
             _path = path;
+            _name = name;
+            _tooltip = tooltip;
+            locked = islocked;
+            _type = typeof(T);
             All.Add(this);
         }
-        public void Restore()
-        {
-            _value = _default;
-            modified = false;
+        public void Restore() {     // return to default
+            Value = _default;
         }
-        public System.Type type { get { return _value.GetType(); } }
-        public T Value { get { return _value; } set { modified = true; _value = value; } }
+        public void Lock() { locked = true; }
+        public void Unlock() { locked = false; }
+        public int Modify(T newvalue) // use Value if you don't need feedback
+        {
+            if (_value.Equals(newvalue))
+                return NO_OP;
+            _value = newvalue;
+            modified = !_value.Equals(_default);
+            if (!_value.Equals(newvalue))
+                return FAILURE;
+            return SUCCESS;
+        }
+        public T Value { get { return _value; } set { modified = !_value.Equals(value); _value = value; } }
         public T Default { get { return _default; } }
+        public Type type { get { return _type; } }
         public bool Modified { get { return modified; } }
+        public string Name { get { return _name; } }
+        public string Path { get { return _path; } }
+        public string Tooltip { get { return _tooltip; } }
 
         public static implicit operator T(Config<T> entry) { return entry.Value; }
     }
@@ -83,7 +109,7 @@ namespace TimelessConfig //work in progress custom config library: Timeless Conf
         }
         void TestFunction() //examples for how the config can be used with the library
         {
-            Config<float> game = new Config<float>(0.5f, "games/game", "Game", "nothing is better than a little game!");
+            Config<float> game = new Config<float>(0.5f, false, "games/game", "Game", "nothing is better than a little game!");
             game.Value = 0.5f;
         }
         string GUID;
@@ -229,7 +255,7 @@ namespace The_Timestopper
     {
         public const string GUID = "TheTimestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "0.9.12";
+        public const string Version = "0.9.13";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -372,6 +398,11 @@ Takes time to recharge, can be upgraded through the terminals.
                 antiHpMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! AntiHPMultiplier !", 20, "How fast the hard damage per second builds in stopped time.");
                 bonusTimeForParry = Config.Bind<float>("{TECHNICAL STUFF}", "! BonusTimeJuicePerParry !", 1, "How much time juice does parrying outside stopped time refill.");
 
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    grayscale.Value = false;
+                }
+
                 config = new ConfigBuilder(GUID, Name);
                 config.BuildAll();
             }
@@ -382,7 +413,6 @@ Takes time to recharge, can be upgraded through the terminals.
             HUDRender = new RenderTexture(Screen.width, Screen.height, 0);
             HUDRender.depth = 0;
             HUDRender.Create();
-            TimeColor = new Color(1, 1, 0, 1);
             Player = GameObject.Find("Player");
             if (Player != null)
                 HUDCamera = Player.transform.Find("Main Camera/HUD Camera").GetComponent<Camera>();
@@ -437,10 +467,15 @@ Takes time to recharge, can be upgraded through the terminals.
                 LoadDone = true;
                 LoadStarted = false;
                 yield break;        }
-            Camera c = Player.transform.Find("Main Camera").transform.Find("Virtual Camera").GetComponent<Camera>();
-            if (c.gameObject.GetComponent<Grayscaler>() == null)
-                c.gameObject.AddComponent<Grayscaler>();
-            c.gameObject.GetComponent<Grayscaler>().DoIt();
+            if (grayscaleShader.isSupported)
+            {
+                Camera c = Player.transform.Find("Main Camera/Virtual Camera").GetComponent<Camera>();
+                if (c.gameObject.GetComponent<Grayscaler>() == null)
+                    c.gameObject.AddComponent<Grayscaler>();
+                c.gameObject.GetComponent<Grayscaler>().DoIt();
+                InitializeShaders();
+            }
+            TimeColor = new Color(1, 1, 0, 1);
             TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
             LoadDone = true;
             LoadStarted = false;
@@ -452,7 +487,12 @@ Takes time to recharge, can be upgraded through the terminals.
             {
                 if (Player == null || grayscaleShader == null)
                     yield return null;
-                Camera c = Player.transform.Find("Main Camera").transform.Find("Virtual Camera").GetComponent<Camera>();
+                if (!grayscaleShader.isSupported)
+                {
+                    mls.LogWarning("grayscaleShaders are not compatible, skipping grayscale effect!");
+                    break;
+                }
+                Camera c = Player.transform.Find("Main Camera/Virtual Camera").GetComponent<Camera>();
                 if (c.gameObject.GetComponent<Grayscaler>() == null)
                     c.gameObject.AddComponent<Grayscaler>();
                 c.gameObject.GetComponent<Grayscaler>().DoIt();
@@ -678,11 +718,14 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             item.label = "test";
             item.name = "test";
             item.style = SettingsItemStyle.Normal;
-            item.itemType = SettingsItemType.Toggle;
+            item.dropdownList = new string[] { "test1", "test2", "test3" };
+            item.itemType = SettingsItemType.Slider;
+            item.sideNote = "this is a literal side note, you can change it or set it to any value you want";
             item.dropdownList = new string[] { "one", "two", "three" };
             sc.items = new List<SettingsItem> { item };
             sc.name = "TestCategory";
             sc.title = "testCategory";
+            sc.description = "this is a test category, it will be used for Timeless Config";
             sc.titleDecorator = "++";
             sp.categories = new SettingsCategory[] { sc };
             sp.name = "TestPage";
@@ -697,7 +740,10 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 yield return null;
             }
             SettingsPageBuilder test = FindRootGameObject("Canvas").transform.Find("OptionsMenu/Pages/Graphics").GetComponent<SettingsPageBuilder>();
-            typeof(SettingsPageBuilder).GetMethod("BuildPage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(test, new object[] { sp });
+            typeof(SettingsPageBuilder).GetField("page", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(test, sp);
+            GameObject G = Instantiate(test.assets.categoryTitlePrefab, test.transform.Find("Scroll Rect/Contents/")).gameObject;
+            G.transform.Find("Text").GetComponent<TextMeshProUGUI>().fontSize = 12;
+            //typeof(SettingsPageBuilder).GetMethod("BuildPage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(test, new object[] { sp });
             mls.LogWarning("Test Should Work");
         }
         public static void ResetGoldArm()
@@ -716,13 +762,13 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            //if (scene.name != "Bootstrap" && LoadDone &&
-            //    scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
-            //{
-            //    mls.LogWarning("Main Menu Detected");
-            //    StartCoroutine(ModifySettingsPage());
-            //}
-                TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
+            if (scene.name != "Bootstrap" && LoadDone &&
+                scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
+            {
+                mls.LogWarning("Main Menu Detected");
+                //StartCoroutine(ModifySettingsPage());
+            }
+            TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
             if (scene.name != "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ &&
                 scene.name != "Bootstrap" && LoadDone &&
                 scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
@@ -859,7 +905,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             TheCube.name = "The Cube";
 //          \\******************************//
 
-            InitializeShaders();
 
             UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
             UnityEngine.SceneManagement.SceneManager.sceneUnloaded += OnSceneUnloaded;
@@ -1190,6 +1235,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         public float Grayscale;
         public void DoIt()
         {
+            if (!Timestopper.grayscale.Value || !Timestopper.grayscaleShader.isSupported)
+                return;
             if (!R.IsCreated())
                 R.Create();
             if (!T.IsCreated())
@@ -1205,6 +1252,12 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         void LateUpdate()
         {
+            if (Timestopper.grayscaleShader != null)
+                if (!Timestopper.grayscaleShader.isSupported)
+                {
+                    Timestopper.mls.LogError("grayscaler attempted grayscale but the shader was null, turning geayscale effect off!");
+                    Timestopper.grayscale.Value = false;
+                }
             if (Timestopper.grayscale.Value)
                 transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = false;
             else
@@ -1212,15 +1265,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (_material != null && _slapper != null)
+            if (_material != null && _slapper != null && Timestopper.grayscale.Value)
             {
-                if (!Timestopper.grayscale.Value)
-                {
-                    transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = true;
-                    Timestopper.Player.transform.Find("Main Camera/HUD Camera").GetComponent<Camera>().targetTexture = null;
-                    Graphics.Blit(source, destination);
-                    return;
-                }
                 if (Timestopper.exclusiveGrayscale.Value)
                     Grayscale = 1 - Timestopper.realTimeScale;
                 else
@@ -1241,6 +1287,16 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
 
             }
             else {
+                if (!Timestopper.grayscale.Value || !Timestopper.grayscaleShader.isSupported)
+                {
+                    transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = true;
+                    Timestopper.Player.transform.Find("Main Camera/HUD Camera").GetComponent<Camera>().targetTexture = null;
+                    Graphics.Blit(source, destination);
+                    Timestopper.HUDCamera.enabled = true;
+                    Timestopper.HUDCamera.targetTexture = null;
+                    this.enabled = false;
+                    return;
+                }
                 if (Timestopper.grayscaleShader != null)
                     _material = new Material(Timestopper.grayscaleShader);
                 if (Timestopper.slappShader != null)
