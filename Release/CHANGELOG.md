@@ -1,5 +1,40 @@
 # CHANGELOG:
 
+
+<details>
+  <summary> 1.0.0 </summary>
+
+  ### FULL RELEASE!
+  - Performance improvements
+  - Now partially Linux compatible!
+  - New Timestopper model!
+  - Parrying now fills time juiced
+  - Timestopper now moves out of the way when punching.
+  - Added the Timestopper arm textmode image to the main menu!
+  - Rockets are now rideable in stopped time!
+  - Landmines do not explode in stopped time (except when you slam onto them)
+  - Timestopper now bobs while walking
+  - Removed Configgy dependency
+  - Restructured configs
+  - Fixed the Time Stop style effect being spammable
+  - Fixed the Whiplash in Stopped Time
+  - Fixed Audio effects not applying to CyberGrind music
+
+  ### technical changes
+  - mod GUID has been changed to "dev.galvin.timestopper"
+  - Timestopper now uses ULTRAKILL/Master shader
+  - Better code structure
+  - Started using Unity Addressables for the asset bundle
+  - StopTime() and StartTime() functions no longer require Player, NewMovement or Playerstopper components
+  - Playerstopper component now has a static Instance
+  - Finally figured out how MonoSingletons work
+
+  ## I have a donation link, and would appreaciate some help  \^v\^
+
+</details>
+
+---
+
 <details>
   <summary>0.9.9</summary>
 

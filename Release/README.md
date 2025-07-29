@@ -16,40 +16,37 @@ or like this:
 ------
 
 ## Disclaimer!
-This mod is not recommended for serious playthroughs, it is mainly meant for funzies. It is not fully done and bugs may occur. I recommend you to back up your save files if there is anything important there for you, just in case I mean.
-It is also very OP, balancing timestop without keeping it as cool as it is, is very hard
+This mod may have minor bugs and balancing issues here and there, since it was originally onl made for funzies.
+However, any worries for it might corrupt your save files are unnecessary, you can mess around to your heart's content! \^ v ^/
 
 ****
 
 ### Abilities:
-+ +You can punch enemies in stopped time, they will fly away when you start it
-+ +You can still throw coins in stopped time, they will remain in air after a while, crazy tricks are possible
-+ +You can still parry in stopped time
-+ +No Weapon Cooldown cheat works with gold arm
-+ +Gold Arm is upgradable through terminals fr
-+ +The Freezeframe is able to move it's rockets in stopped time with the alt-fire
-+ +Customizable animation speed, timestop speed, healability, shader effects, maximum upgrades, and more...
++ +You can punch enemies in stopped time, and they will keep their momentum
++ +You can still throw coins, parry, use the wiplash, pick up items, etc. in stopped time, just fine
++ +No Weapon Cooldown cheat works with the Gold Arm
++ +Gold Arm is upgradable through terminals fr fr
++ +The Freezeframe is able to move rockets in stopped time with the alt-fire, so you can ride them
++ +The Timestopper can be seen in the main menu when obtained
++ +Customizable animation speed, timestop speed, hard damage, shader effects, maximum upgrades, and more...
 
 ### To do:
 + Custom boss to obtain the gold arm from, not a statue that cums it out
 + Make *Special Mode* actually work
 + Make certain bosses able to move in stopped time, optional, maybe
-+ More balancing work, overclocking mechanism, more visual trickery, etc.
-+ ~Touch grass~
-+ Make the gold arm appear in main menu V1 cool ascii art thingy
++ More balancing work, overclocking mechanism (just maybe), more visual customization, etc.
 + Add sound to arm pickup animation too
 + Add the warning a sound
 + Add more easter eggs
-+ Beat P-2 without cheating
-+ ~Make more friends~
 
 ### Downsides / Current Bugs:
 - -Movement is a little bit janky in stopped time.
-- -~The pillar cums out the yellow arm wtf!~
 - -Stuck infinitely after act ending cutscenes, haven't checked if it's still there? (needs testing)
 - -No special mode yet
-- -No "ZA WARUDO" voiceline yet, only the sound effect
+- -No "ZA WARUDO" voiceline yet
 
+## ¿What to do if the mod doesn't work / if you find a bug?
+Go to the mod's github page [here](https://github.com/GalvinVoltag/The-Timestopper), and create an issue. I'd appreciate if you'd copy-paste the full log (text from the terminal that opens with the game) inside triple quotes (\``` like this ```), it helps me diagnose the problem more efficiently and correctly. *Also you might wanna follow the issue, I might just build a fix release so that you don't need to wait until the next update.*
 
 
 [![Buymeacoffee](https://github.com/user-attachments/assets/866f5254-f5d5-403b-a7a2-7ab5238efcb6)](https://coff.ee/galvinvoltag)
@@ -57,7 +54,7 @@ It is also very OP, balancing timestop without keeping it as cool as it is, is v
 <details>
   <summary>Guide for dummies</summary>
   
-   ### to first get the gold arm, find this frickin' door in 7-1:
+   ### to first get the gold arm, find this frickin' door in 7-1, and carry the blue skull to it:
 
   ![image](https://github.com/user-attachments/assets/ef4f57b3-d8e1-4428-886d-2b1fc1da7c17)
 

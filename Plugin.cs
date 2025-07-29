@@ -1,122 +1,375 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Serialization;
 using System.IO;
-using BepInEx;
-using BepInEx.Logging;
 using HarmonyLib;
-using ULTRAKILL.Cheats;
 using UnityEngine;
-using UnityEngine.AI;
-using UnityEngine.Windows;
-using UnityEngine.Internal;
-using UnityEngine.Rendering;
-using UnityEngine.PlayerLoop;
-using UnityEngine.InputSystem;
-using UnityEngine.AddressableAssets;
 using System.Reflection.Emit;
-using System.Globalization;
 using System.Collections;
-using Configgy;
-using BepInEx.Configuration;
-using static System.Net.Mime.MediaTypeNames;
-using Configgable.Assets;
+//using Configgy;
+//using Configgable.Assets;
 using UnityEngine.SceneManagement;
-using System.Security.Cryptography;
-using System.Resources;
 using TMPro;
-using System.Runtime.CompilerServices;
-using UnityEngine.UI;
-using BepInEx.Bootstrap;
-using System.CodeDom;
-using UnityEngine.Animations;
-using System.Diagnostics;
-using SettingsMenu.Components.Pages;
 using SettingsMenu.Models;
 using SettingsMenu.Components;
 using System.Runtime.InteropServices;
+//using TimelessConfig;
+using BepInEx;
+using BepInEx.Logging;
+using BepInEx.Configuration;
+using BepInEx.Bootstrap;
+using PluginConfig.API;
+using PluginConfig.API.Fields;
+using UnityEngine.InputSystem.XR.Haptics;
 
-namespace TimelessConfig //work in progress custom config library: Timeless Config
-{
-    [Serializable]
-    public class Config<T>
-    {
-        public static List<object> All = new List<object>();
+//namespace TimelessConfig //work in progress custom config library: Timeless Config
+//{
+//    public enum SettingType
+//    {
+//        Auto,
+//        Check,
+//        Value,
+//        Slider,
+//        Dropdown,
+//    };
 
-        public const int NO_OP = -1;
-        public const int FAILURE = 0;
-        public const int SUCCESS = 1;
+//    public class Config<T>
+//    {
+//        public static List<object> All = new List<object>();
 
-        bool modified = false;  // if the value is modified, needed for when default values are updated
-        bool locked = false;    // if the setting can be changed from the settings menu
-        string _path;           // path of the setting in the menu
-        string _name;           // name of the setting in the menu
-        string _tooltip;        // tip of the setting in the menu
-        Type _type;              // type of the config
-        T _value;               // current value
-        T _default;             // default value
-        public Config(T defaultvalue, bool islocked = false, string path = "", string name = "", string tooltip = "") {
-            _value = defaultvalue;
-            _default = defaultvalue;
-            _path = path;
-            _name = name;
-            _tooltip = tooltip;
-            locked = islocked;
-            _type = typeof(T);
-            All.Add(this);
-        }
-        public void Restore() {     // return to default
-            Value = _default;
-        }
-        public void Lock() { locked = true; }
-        public void Unlock() { locked = false; }
-        public int Modify(T newvalue) // use Value if you don't need feedback
-        {
-            if (_value.Equals(newvalue))
-                return NO_OP;
-            _value = newvalue;
-            modified = !_value.Equals(_default);
-            if (!_value.Equals(newvalue))
-                return FAILURE;
-            return SUCCESS;
-        }
-        public T Value { get { return _value; } set { modified = !_value.Equals(value); _value = value; } }
-        public T Default { get { return _default; } }
-        public Type type { get { return _type; } }
-        public bool Modified { get { return modified; } }
-        public string Name { get { return _name; } }
-        public string Path { get { return _path; } }
-        public string Tooltip { get { return _tooltip; } }
+//        public const int NO_OP = -1;
+//        public const int FAILURE = 0;
+//        public const int SUCCESS = 1;
+//        bool modified = false;  // if the value is modified, needed for when default values are updated
+//        bool locked = false;    // if the setting can be changed from the settings menu
+//        string _path;           // path of the setting in the menu
+//        string _name;           // name of the setting in the menu, \n means locked by default
+//        string _tooltip;        // tip of the setting in the menu
+//        Type _type = typeof(T); // type of the config
+//        T _value;               // current value
+//        T _default;             // default value
+//        SettingType settingType;// type of the setting used in the menu
+//        string[] _list;         // list of available options for if the setting is a dropdown, 0 and 1 are used for min and max slider values if its a slider
+//        bool[] _listLocks;      // list of which elements are locked if the setting is a dropdown
+//        public event Action<string, object> OnModification;
+//        public Config(T defaultvalue, string name = "setting", string path = "", string tooltip = "", SettingType typeOfSetting = SettingType.Auto, string[] list = null, bool islocked = false)
+//        {
+//            _value = defaultvalue;
+//            _default = defaultvalue;
+//            _path = path;
+//            _name = name.Substring((name[0] == '\n') ? 1 : 0);
+//            _tooltip = tooltip;
+//            locked = islocked || (name[0] == '\n');
+//            _type = typeof(T);
+//            All.Add(this);
+//            settingType = typeOfSetting;
+//            if (list == null)
+//                return;
+//            _list = new string[list.Length];
+//            _listLocks = new bool[list.Length];
+//            for (int i = 0; i < list.Length; i++)
+//            {
+//                _list[i] = list[i].Substring((list[i][0] == '\n') ? 1 : 0);
+//                _listLocks[i] = (list[i][0] == '\n');
+//            }
+//        }
 
-        public static implicit operator T(Config<T> entry) { return entry.Value; }
-    }
+//        public string GetNameTitle()
+//        {
+//            string slash = "";
+//            if (Path != "")
+//                slash = "/";
+//            return $@"[{Path}{slash}{Name}]";
+//        }
+//        public string Serialize()
+//        {
+//            string liststring = "";
+//            string lockstring = "";
+//            string slash = "";
+//            if (Path != "")
+//                slash = "/";
+//            if (_list != null)
+//            {
+//                for (int i = 0; i < _list.Length; i++)
+//                {
+//                    liststring += _list[i] + ", ";
+//                    lockstring += (_listLocks[i] ? "true" : "false") + ", ";
+//                }
+//            }
+//            if (_list == null)
+//                return $@"
+//[{Path}{slash}{Name}]
+//type = {type.Name}
+//value = {Value.ToString()}
+//default = {Default.ToString()}
+//locked = {locked}
+//modified = {modified}
+//tip = {"\""}{Tooltip}{"\""}
+//settingType = {SettingType}
+//";
+//            else
+//                return $@"
+//[{Path}{slash}{Name}]
+//type = {type.Name}
+//value = {Value.ToString()}
+//default = {Default.ToString()}
+//locked = {locked}
+//modified = {modified}
+//tip = {"\""}{Tooltip}{"\""}
+//droplist = [{liststring}]
+//settingType = {SettingType}
+//droplocks = [{lockstring}]
+//";
+//        }
 
-    [Serializable]
-    public class ConfigManager
-    {
-        ConfigManager(string ModGUID, string ModName)
-        {
-            GUID = ModGUID;
-            Name = ModName;
-        }
-        void BuildAll()
-        {
+//        public void Digest(string serialized)
+//        {
+//            string[] lines = serialized.Split('\n');
+//            Dictionary<string, string> cache = new Dictionary<string, string>();
+//            foreach(string s in lines)
+//            {
+//                if (s.Length >= 1)
+//                    cache.Add(s.Split('=')[0].Substring(0, s.Split('=')[0].Length - 1), s.Substring(s.Split('=')[0].Length + 1));
+//            }
+//            System.ComponentModel.TypeConverter converter;
+//            foreach(string s in cache.Keys)
+//            {
+//                switch(s)
+//                {
+//                    case "value":
+//                        converter = TypeDescriptor.GetConverter(typeof(T));
+//                        _value = (T)converter.ConvertFromString(cache["value"]);
+//                        break;
+//                    case "modified":
+//                        converter = TypeDescriptor.GetConverter(typeof(bool));
+//                        modified = (bool)converter.ConvertFromString(cache["modified"]);
+//                        break;
+//                    case "locked":
+//                        converter = TypeDescriptor.GetConverter(typeof(bool));
+//                        locked = (bool)converter.ConvertFromString(cache["locked"]);
+//                        break;
+//                    case "droplist":
+//                        {
+//                            string execution = cache["droplist"].Split('[')[1].Split(']')[0];
+//                            _list = execution.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries);
+//                            break;
+//                        }
+//                    case "droplocks":
+//                        {
+//                            string[] execution = cache["droplocks"].Split('[')[1].Split(']')[0].Split(',');
+//                            converter = TypeDescriptor.GetConverter(typeof(bool));
+//                            List<bool> bools = new List<bool>();
+//                            foreach (string ent in execution)
+//                                if (ent != "")
+//                                    bools.Add((bool)converter.ConvertFromString(ent));
+//                            _listLocks = bools.ToArray();
+//                            break;
+//                        }
+//                    case "settingType":
+//                        converter = TypeDescriptor.GetConverter(typeof(SettingType));
+//                        settingType = (SettingType)converter.ConvertFromString(cache["settingType"]);
+//                        break;
+//                    default:
+//                        break;
+//                }
+//                if (!modified) Restore();
+//            }
+//        }
+//        public void Restore() {     // return to default value
+//            Value = _default;
+//        }
+//        public void Lock() { if (locked == false) OnModification?.Invoke(GetNameTitle(), this);  locked = true; }
+//        public void Unlock() { if (locked == true) OnModification?.Invoke(GetNameTitle(), this); locked = false; }
+//        public void LockDropdownElement(int id)
+//        {
+//            if (!_listLocks[id]) OnModification?.Invoke(GetNameTitle(), this);
+//            _listLocks[id] = true;
+//        }
+//        public void LockDropdownElement(string elementName) // not including the \n
+//        {   int i = 0;
+//            foreach(string s in _list)
+//            {
+//                if (s == elementName)
+//                {
+//                    if (!_listLocks[i]) OnModification?.Invoke(GetNameTitle(),this);
+//                    _listLocks[i] = true;
+//                }
+//                i++;
+//            }
+//        }
+//        public void UnlockDropdownElement(int id)
+//        {
+//            if (_listLocks[id]) OnModification?.Invoke(GetNameTitle(), this);
+//            _listLocks[id] = false;
+//        }
+//        public void UnlockDropdownElement(string elementName) // not including the \n
+//        {   int i = 0;
+//            foreach (string s in _list)
+//            {
+//                if (s == "\n" + elementName)
+//                    if (_listLocks[i]) OnModification?.Invoke(GetNameTitle(), this);
+//                    _listLocks[i] = false;
+//                i++;
+//            }
+//        }
+//        public string GetDropdownElement(int id)
+//        {
+//            return _list[id];
+//        }
+//        public int GetDropdownElementID(string elementName) // returns -1 in failure, -2 if list is null
+//        {
+//            if (_list == null) return -2;
+//            for (int i = 0; i < _list.Length; i++)
+//            {
+//                if (_list[i] == elementName)
+//                    return i;
+//            }
+//            return -1;
+//        }
+//        public int Modify(T newvalue) // use Value if you don't need feedback
+//        {
+//            if (_value.Equals(newvalue))
+//                return NO_OP;
+//            Value = newvalue;
+//            if (!_value.Equals(newvalue))
+//                return FAILURE;
+//            OnModification.Invoke(GetNameTitle(), this);
+//            return SUCCESS;
+//        }
+//        public T Value { get { return _value; } set { if (!_value.Equals(value)) OnModification?.Invoke(GetNameTitle(), this); modified = !_value.Equals(_default); _value = value; } }
+//        public T Default { get { return _default; } }
+//        public Type type { get { return _type; } }
+//        public bool Modified { get { return modified; } }
+//        public bool Locked { get { return locked; } }
+//        public SettingType SettingType { get { return settingType; } }
+//        public string Name { get { return _name.Substring((_name[0] == '\n') ? 1 : 0); } }
+//        public string Path { get { return _path; } }
+//        public string Tooltip { get { return _tooltip; } }
+//        public string[] ListElements { get { return _list; } }
 
-        }
-        void TestFunction() //examples for how the config can be used with the library
-        {
-            Config<float> game = new Config<float>(0.5f, false, "games/game", "Game", "nothing is better than a little game!");
-            game.Value = 0.5f;
-        }
-        string GUID;
-        string Name;
+//        public static implicit operator T(Config<T> entry) { return entry.value; }
+//        //public static implicit operator Config<T>(T value) { return new Config<T>(value); }
+//    }
 
-    }
-}
+//    public class ConfigManager
+//    {
+//        Assembly builder;
+//        string[] allEntries;
+//        string[] metadata;
+//        const string version = "1.0.0";
+//        public ConfigManager(string ModGUID, string ModName, ManualLogSource mls, string customPath = "") // relative to default config path
+//        {
+//            mls.LogWarning("TIMELESS CONFIIIIIGGGHHH !!!!!!!!!!!!!!!!!!!!!!!!!!");
+//            builder = Assembly.GetCallingAssembly();
+//            GUID = (string.IsNullOrEmpty(ModGUID) ? builder.GetName().Name : ModGUID);
+//            Name = (string.IsNullOrEmpty(ModName) ? GUID : ModName);
+//            metadata = new string[3] {
+//                "## Generated by Timeless Config - v" + version,
+//                "## Config file created for the mod " + Name,
+//                "## GUID " + GUID
+//            };
+//        }
+//        void LoadFromFile()
+//        {
+//            string path = Path.Combine(Paths.ConfigPath, GUID + ".tcfg");
+//            List<string> all = new List<string>();
+//            if (!File.Exists(path))
+//                return;
+//            string[] lines = File.ReadAllLines(path);
+//            string entry = "";
+//            foreach (string line in lines)
+//            {
+//                if (line.StartsWith("["))
+//                {
+//                    if (entry != "")
+//                        all.Add(entry);
+//                    entry = line;
+//                    continue;
+//                }
+//                if (entry == "")
+//                    continue;
+//                else
+//                    entry += line + "\n";
+//            }
+//            all.Add(entry);
+//            allEntries = all.ToArray();
+//        }
+//        public string GetEntry(string titleCard)
+//        {
+//            foreach(string s in allEntries)
+//            {
+//                if (s.StartsWith(titleCard))
+//                    return s;
+//            }
+//            return null;
+//        }
+//        public int GetEntryID(string titleCard)
+//        {
+//            int i = 0;
+//            foreach (string s in allEntries)
+//            {
+//                if (s.StartsWith(titleCard))
+//                    return i;
+//                i++;
+//            }
+//            return 0;
+//        }
+//        public void SaveChangedValue(string titleCard, object instance)
+//        {
+
+//            int id = GetEntryID(titleCard);
+//            allEntries[id] = instance.GetType().GetMethod("Serialize").Invoke(instance, null) as string;
+//            string path = Path.Combine(Paths.ConfigPath, GUID + ".tcfg");
+//            File.WriteAllLines(path, metadata.Concat(allEntries));
+//        }
+//        public void BuildAll(ManualLogSource mls)
+//        {
+//            mls.LogError("Buildall has been called! ----------------");
+//            if ((object)builder != null)
+//                builder = Assembly.GetCallingAssembly();
+
+
+//            List<string> all = new List<string>();
+
+//            mls.LogWarning("loading file");
+//            LoadFromFile();
+
+//            Type[] types = builder.GetTypes();
+//            foreach(Type type in types)
+//            {
+//                FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+//                foreach (FieldInfo field in fields)
+//                {
+//                    if (!field.IsStatic)
+//                        continue;
+
+//                    if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(Config<>))
+//                    {
+//                        var cInstance = field.GetValue(null);
+//                        if (cInstance != null)
+//                        {
+//                            mls.LogInfo($"Found config: {field.DeclaringType.Name}.{field.Name}, type = {field.DeclaringType.Name}");
+//                            string titleCard = cInstance.GetType().GetMethod("GetNameTitle").Invoke(cInstance, null) as string;
+//                            string entryString = GetEntry(titleCard);
+//                            if (entryString != null)
+//                                cInstance.GetType().GetMethod("Digest").Invoke(cInstance, new object[] { entryString });
+//                            cInstance.GetType().GetEvent("OnModification").AddEventHandler(cInstance, (Action<string, object>)SaveChangedValue);
+//                            all.Add(cInstance.GetType().GetMethod("Serialize").Invoke(cInstance, null) as string);
+//                            mls.LogInfo(cInstance.GetType().GetMethod("Serialize").Invoke(cInstance, null) as string);
+//                            mls.LogInfo($"config done");
+//                        }
+//                    }
+//                }
+//            }
+//            allEntries = all.ToArray();
+//            string path = Path.Combine(Paths.ConfigPath, GUID + ".tcfg");
+//            File.WriteAllLines(path, metadata.Concat(allEntries));
+//        }
+//        string GUID;
+//        string Name;
+
+//    }
+//}
 
 namespace The_Timestopper
 {
@@ -130,6 +383,17 @@ namespace The_Timestopper
         public bool firstWarning = false;
         public int upgradeCount = 0;
         public float maxTime = 3.0f;
+
+        public static new string ToString()
+        {
+            TimestopperProgress progress = Read();
+            return $@"Timestopper saved progress:
+            - has arm: {progress.hasArm}
+            - equipped: {progress.equippedArm}
+            - firstwarning: {progress.firstWarning}
+            - upgrades: {progress.upgradeCount}
+            - max time: {progress.maxTime} ";
+        }
         public int upgradeCost
         {
             get { return 150000 + upgradeCount * 66000; }
@@ -137,15 +401,18 @@ namespace The_Timestopper
         private const string PROGRESS_FILE = "timestopper.state";
         private static TimestopperProgress inst;
         private static string GenerateTextBar(char c, int b)
-        {   string s = "";
-            for (int i=0; i < b; i++)
+        {
+            string s = "";
+            for (int i = 0; i < b; i++)
                 s += c;
             return s;
         }
         public static object ArmStatus(TProgress id)
-        {   TimestopperProgress progress = Read();
+        {
+            TimestopperProgress progress = Read();
             switch (id)
-            {   case TProgress.hasArm:
+            {
+                case TProgress.hasArm:
                     return progress.hasArm;
                 case TProgress.equippedArm:
                     return progress.equippedArm;
@@ -158,21 +425,23 @@ namespace The_Timestopper
                 case TProgress.upgradeText:
                     return (string)"<align=\"center\"><color=#FFFF42>" + GenerateTextBar('▮', progress.upgradeCount) + "</color>";
                 case TProgress.upgradeCost:
-                    return 150000 + progress.upgradeCount*66000;
+                    return 150000 + progress.upgradeCount * 66000;
                 default:
                     return null;
             }
         }
         public static void UpgradeArm()
-        {   TimestopperProgress progress = Read();
+        {
+            TimestopperProgress progress = Read();
             GameProgressSaver.AddMoney(-progress.upgradeCost);
             progress.maxTime += 1 + 1 / (progress.upgradeCount + 0.5f);
             progress.upgradeCount++;
             Write(progress);
         }
         public static void ForceDownngradeArm()
-        {   TimestopperProgress progress = Read();
-            while (progress.upgradeCount > Timestopper.maxUpgrades.Value)
+        {
+            TimestopperProgress progress = Read();
+            while (progress.upgradeCount > Timestopper.maxUpgrades.value)
             {
                 progress.upgradeCount--;
                 progress.maxTime -= 1 + 1 / (progress.upgradeCount + 0.5f);
@@ -180,13 +449,15 @@ namespace The_Timestopper
             Write(progress);
         }
         public static void AceptWarning()
-        {   TimestopperProgress progress = Read();
+        {
+            TimestopperProgress progress = Read();
             progress.firstWarning = true;
             Write(progress);
 
         }
         public static void GiveArm()
-        {   TimestopperProgress progress = Read();
+        {
+            TimestopperProgress progress = Read();
             progress.hasArm = true;
             progress.equippedArm = true;
             Timestopper.Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.SetActive(true);
@@ -195,7 +466,8 @@ namespace The_Timestopper
             Write(progress);
         }
         public static void ChangeEquipmentStatus()
-        {   Timestopper.mls.LogWarning("Dum dum gumgineashi");
+        {
+            Timestopper.mls.LogWarning("Dum dum gumgineashi");
             if (Timestopper.LatestTerminal != null)
                 EquipArm(Timestopper.LatestTerminal.transform.Find("Canvas/Background/Main Panel/Weapons/" +
               "Arm Window/Variation Screen/Variations/Arm Panel (Gold)/Equipment/Equipment Status/Text (TMP)").GetComponent<TextMeshProUGUI>().text[0] == 'E');
@@ -203,22 +475,26 @@ namespace The_Timestopper
                 Timestopper.mls.LogWarning("LatestTerminal is Null!");
         }
         public static void EquipArm(bool equipped)
-        {   TimestopperProgress progress = Read();
-            if (Timestopper.GoldArm == null)
+        {
+            TimestopperProgress progress = Read();
+            if (Playerstopper.Instance.GoldArm == null)
                 return;
             if (progress.hasArm)
             {
                 progress.equippedArm = equipped;
-                Timestopper.GoldArm.SetActive(equipped);
+                Playerstopper.Instance.GoldArm.SetActive(equipped);
                 Timestopper.mls.LogInfo("Gold Arm Equipment Status changed: " + progress.equippedArm.ToString());
             }
             else
                 Timestopper.mls.LogError("Invalid request of arm equipment, user doesn't have the arm!");
             Write(progress);
         }
+
         public static TimestopperProgress Read()
-        {   try
-            {   string filePath = Path.Combine(GameProgressSaver.SavePath, PROGRESS_FILE);
+        {
+            try
+            {
+                string filePath = Path.Combine(GameProgressSaver.SavePath, PROGRESS_FILE);
                 if (File.Exists(filePath))
                 {
                     string jsonData = File.ReadAllText(filePath);
@@ -227,11 +503,14 @@ namespace The_Timestopper
                 else
                 {
                     inst = new TimestopperProgress();
-                }                                               }
+                }
+            }
             catch (Exception e)
-            {   Timestopper.mls.LogError($"Failed to read progress: {e.Message}, resetting save file {GameProgressSaver.currentSlot}");
+            {
+                Timestopper.mls.LogError($"Failed to read progress: {e.Message}, resetting save file {GameProgressSaver.currentSlot}");
                 inst = new TimestopperProgress();
-                Write(inst);                            }
+                Write(inst);
+            }
             return inst;
         }
 
@@ -250,18 +529,23 @@ namespace The_Timestopper
         }
     }
 
+
+
+
+
+
     [BepInPlugin(GUID, Name, Version)]
     public class Timestopper : BaseUnityPlugin
     {
-        public const string GUID = "TheTimestopper";
+        public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "0.9.13";
+        public const string Version = "1.0.0";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
 
-        private ConfigBuilder config;
-        public static ManualLogSource mls;
+        //private ConfigBuilder config;
+        public static ManualLogSource mls = BepInEx.Logging.Logger.CreateLogSource(Name);
         public const string ARM_DESCRIPTION = @"A Godfist that <color=#FFFF43>stops</color> time.
 
 <color=#FF4343>Punch</color> to stop time, and <color=#FF4343>punch again</color> to start it.
@@ -276,22 +560,23 @@ Takes time to recharge, can be upgraded through the terminals.
         public static Shader slappShader;
         public static Camera HUDCamera;
         public static RenderTexture HUDRender;
-        public AudioClip[] TimestopSounds = new AudioClip[4] { null, null, null, null };
-        public AudioClip[] StoppedTimeAmbiences = new AudioClip[4] { null, null, null, null };
-        public AudioClip[] TimestartSounds = new AudioClip[4] { null, null, null, null };
+        public static AudioClip[] TimestopSounds = new AudioClip[4] { null, null, null, null };
+        public static AudioClip[] StoppedTimeAmbiences = new AudioClip[4] { null, null, null, null };
+        public static AudioClip[] TimestartSounds = new AudioClip[4] { null, null, null, null };
         public static Texture2D armGoldLogo;
+        public static Texture2D armGoldText;
         public static Texture2D armGoldColor;
+        public static Texture2D newRoomColor;
         public static GameObject armGoldObj;
+        public static GameObject newRoomObj;
+        public static GameObject newRoom;
         public static Animator armGoldAnimator = new Animator();
         public static RuntimeAnimatorController armGoldAC;
         public AssetBundle bundle = null;
 
         // vvvvvvvvvvvvv REFERENCES vvvvvvvvvvvvvvvvvvvvvv\\
-        private FistControl Fist;
         private GameObject[] TimeHUD = new GameObject[3];
         public static GameObject Player;
-        public static GameObject GoldArm;
-        public static GameObject musicManager;
         public static GameObject LatestTerminal;
         public static GameObject TheCube;
         public static GameObject MenuCanvas;
@@ -316,17 +601,23 @@ Takes time to recharge, can be upgraded through the terminals.
         public static PrivateInsideTimer messageTimer = new PrivateInsideTimer();
         private GameObject currentLevelInfo = null;
 
-        public static float playerDeltaTime {
-            get { 
-                if (fixedCall) return Time.fixedDeltaTime; 
+        public static float playerDeltaTime
+        {
+            get
+            {
+                if (fixedCall) return Time.fixedDeltaTime;
                 else if (TimeStop) return Time.unscaledDeltaTime * playerTimeScale;
-                else return Time.deltaTime; }
+                else return Time.deltaTime;
+            }
         }
-        public static float playerFixedDeltaTime { 
-            get { 
-                if(fixedCall) return Time.fixedDeltaTime;
+        public static float playerFixedDeltaTime
+        {
+            get
+            {
+                if (fixedCall) return Time.fixedDeltaTime;
                 else if (TimeStop) return Time.fixedDeltaTime * playerTimeScale;
-                else return Time.fixedDeltaTime; }
+                else return Time.fixedDeltaTime;
+            }
         }
         public static ULTRAKILL.Cheats.BlindEnemies BlindCheat = new ULTRAKILL.Cheats.BlindEnemies();
         //________________________ COROUTINES __________________________\\
@@ -339,77 +630,141 @@ Takes time to recharge, can be upgraded through the terminals.
         public enum SoundTypeA { None, Classic, Alternate, Za_Warudo };
         public enum SoundTypeB { None, Classic, Alternate, Ambience };
         public enum SoundTypeC { None, Classic, Alternate };
-        public static ConfigEntry<KeyCode> stopKey;
-        public static ConfigEntry<SoundTypeA> stopSound;
-        public static ConfigEntry<SoundTypeB> stoppedSound;
-        public static ConfigEntry<SoundTypeC> startSound;
-        public static ConfigEntry<float> stopSpeed;
-        public static ConfigEntry<float> startSpeed;
-        public static ConfigEntry<float> affectSpeed;
-        public static ConfigEntry<float> animationSpeed;
-        public static ConfigEntry<float> soundEffectVolume;
-        public static ConfigEntry<bool> filterMusic;
-        public static ConfigEntry<float> stoppedMusicPitch;
-        public static ConfigEntry<float> stoppedMusicVolume;
-        public static ConfigEntry<bool> grayscale;
-        public static ConfigEntry<float> grayscaleAmount;
-        public static ConfigEntry<bool> exclusiveGrayscale;
-        public static ConfigEntry<bool> healInTimestop;
-        public static ConfigEntry<int> maxUpgrades;
-        public static ConfigEntry<bool> forceDowngrade;
-        public static ConfigEntry<bool> specialMode;
+        public static KeyCodeField stopKey;
+        public static EnumField<SoundTypeA> stopSound;
+        public static EnumField<SoundTypeB> stoppedSound;
+        public static EnumField<SoundTypeC> startSound;
+        public static FloatField stopSpeed;
+        public static FloatField startSpeed;
+        public static FloatField affectSpeed;
+        public static FloatField animationSpeed;
+        public static FloatSliderField soundEffectVolume;
+        public static BoolField filterMusic;
+        public static FloatSliderField stoppedMusicPitch;
+        public static FloatSliderField stoppedMusicVolume;
+        public static BoolField grayscale;
+        public static FloatSliderField grayscaleAmount;
+        public static BoolField exclusiveGrayscale;
+        public static BoolField timestopHardDamage;
+        public static IntField maxUpgrades;
+        public static BoolField forceDowngrade;
+        public static BoolField specialMode;
         //---------------------technical stuff--------------------\\
-        public static ConfigEntry<float> lowerTreshold; //2.0f
-        public static ConfigEntry<float> blindScale; //0.4f
-        public static ConfigEntry<float> refillMultiplier; //0.12f
-        public static ConfigEntry<float> bonusTimeForParry;
-        public static ConfigEntry<float> antiHpMultiplier;
+        public static FloatField lowerTreshold; //2.0f
+        public static FloatField blindScale; //0.4f
+        public static FloatField refillMultiplier; //0.12f
+        public static FloatField bonusTimeForParry;
+        public static FloatField antiHpMultiplier;
+        //-------------------------colors--------------------------\\
+        public static ColorField timeJuiceColorNormal;
+        public static ColorField timeJuiceColorInsufficient;
+        public static ColorField timeJuiceColorUsing;
+        public static ColorField timeJuiceColorNoCooldown;
+
+        private PluginConfigurator config;
 
 
+        // {{{{{{{{{{{ FOR TESTING }}}}}}}}}}}}}}}}}
+        //public static Config<float> testfloat = new Config<float>(1, "test one");
+        //public static Config<float> testfloat2 = new Config<float>(2, "test two");
+        //public static Config<bool> testbool = new Config<bool>(false, "bool option");
+        //public static ConfigManager configmanager = new ConfigManager(GUID, Name, mls);
 
+
+        void Awake()
+        {
+            if (Instance == null) { Instance = this; }
+
+            mls.LogInfo("The Timestopper has awakened!");
+            InitializeConfig();
+
+            harmony.PatchAll();
+
+            base.StartCoroutine(LoadBundle());   //Load all assets
+
+            //***********DEBUG**************\\
+            TheCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            TheCube.name = "The Cube";
+
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+            UnityEngine.SceneManagement.SceneManager.sceneUnloaded += OnSceneUnloaded;
+        }
         void InitializeConfig()
         {
             if (config == null)
             {
-                //******NORMAL SETTINGS******\\
-                stopKey = Config.Bind<KeyCode>("", "Timestopper Key", KeyCode.V);
-                stopSound = Config.Bind<SoundTypeA>("", "Timestop Sound", SoundTypeA.Za_Warudo);
-                stoppedSound = Config.Bind<SoundTypeB>("", "Stooped Time Ambience", SoundTypeB.Classic);
-                startSound = Config.Bind<SoundTypeC>("", "Timestart Sound", SoundTypeC.Classic);
-                stopSpeed = Config.Bind<float>("", "Slowdown Multiplier", 0.6f, "How many seconds it takes for time to stop, set to 0 for instant timestop.");
-                startSpeed = Config.Bind<float>("", "Speedup Multiplier", 0.8f, "How many seconds it takes for time to start, set to 0 for instant timestart.");
-                affectSpeed = Config.Bind<float>("", "Interaction Slowdown Multiplier", 1f, "How many seconds it takes for player interactions to stop in time (coins tossed in stopped time, for example), set to zero for no timestop interaction.");
-                animationSpeed = Config.Bind<float>("", "Animation Speed Multiplier", 1.3f, "How fast the Timestopper's animation plays");
-                soundEffectVolume = Config.Bind<float>("", "Sound Effect Volume", 1f, "How loud the timestop and timestart sound effects are.");
-                grayscale = Config.Bind<bool>("", "Grayscale", true, "Wheter to apply grayscale effect when time is stopped or not, setting this to false may increase performance.");
-                grayscaleAmount = Config.Bind<float>("", "Grayscale Amount", 1.0f, "Amount of grayscale the screen gets when time is stopped. You are free to change it to ANY number you want. (between 0-1 is intended)");
-                exclusiveGrayscale = Config.Bind<bool>("", "Exclusive Grayscale", true, "Turn screen grayscale only when timestop effect is on play. When false, screen grayscale is applied any time when time stops (main menu, parry, impact frames, etc.), otherwise only when the Timestopper is used.");
-                filterMusic = Config.Bind<bool>("", "Filter Music", false, "Filter music when time is stopped just like in the menu");
-                stoppedMusicPitch = Config.Bind<float>("", "Stopped time Music Pitch", 0.6f, "Pitch of the music when time is stopped, set to 0 to stop the music");
-                stoppedMusicVolume = Config.Bind<float>("", "Stopped time Music Volume", 0.8f, "Volume of the music when time is stopped, set to 0 to stop the music");
-                healInTimestop = Config.Bind<bool>("", "Heal in Stopped Time", false, "Wether Player can heal in stopped time or not.");
-                maxUpgrades = Config.Bind<int>("", "Maximum Upgrades", 10, "Maximum number of upgrades the Timestopper can get.");
-                forceDowngrade = Config.Bind<bool>("", "Force Downgrade", false, "If the arm is upgraded more than maximum upgrade count (by cheating, or due to different save file), downgrade the arm to the maximum upgrade automatically.");
-                specialMode = Config.Bind<bool>("", "Special Mode", false, "Try and see          >:D) ");
-                //*******TECHNICAL********\\
-                lowerTreshold = Config.Bind<float>("{TECHNICAL STUFF}", "! LowerTreshold !", 2.0f, "Minimum time juice you need to have to do timestop in Seconds");
-                blindScale = Config.Bind<float>("{TECHNICAL STUFF}", "! BlindScale !", 0.2f, "Timescale where enemies can't see you.");
-                refillMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! RefillMultiplier !", 0.09f, "Time juice amount you get per second.");
-                antiHpMultiplier = Config.Bind<float>("{TECHNICAL STUFF}", "! AntiHPMultiplier !", 20, "How fast the hard damage per second builds in stopped time.");
-                bonusTimeForParry = Config.Bind<float>("{TECHNICAL STUFF}", "! BonusTimeJuicePerParry !", 1, "How much time juice does parrying outside stopped time refill.");
+                config = PluginConfigurator.Create(Name, GUID);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    grayscale.Value = false;
-                }
+                PluginConfig.API.Decorators.ConfigSpace space0 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 6);
+                PluginConfig.API.Decorators.ConfigHeader general = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- GENERAL --");
 
-                config = new ConfigBuilder(GUID, Name);
-                config.BuildAll();
+                stopKey = new KeyCodeField(config.rootPanel, "Timestopper Key", "stopkey", KeyCode.V);
+                timestopHardDamage = new BoolField(config.rootPanel, "Timestop Hard Damage", "harddamage", true); // reverse input
+                stopSpeed = new FloatField(config.rootPanel, "Timestop Speed", "stopspeed", 0.6f);
+                startSpeed = new FloatField(config.rootPanel, "Timestart Speed", "startspeed", 0.8f);
+                affectSpeed = new FloatField(config.rootPanel, "Interaction Speed", "interactionspeed", 1.0f);
+                animationSpeed = new FloatField(config.rootPanel, "Animation Speed", "animationspeed", 1.3f);
+
+                PluginConfig.API.Decorators.ConfigSpace space1 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 4);
+                PluginConfig.API.Decorators.ConfigHeader graphic = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- GRAPHICS --");
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                    mls.LogWarning("Linux OS detected, grayscale effects are turned off by default!");
+                    grayscale = new BoolField(config.rootPanel, "Grayscale Effect", "doGrayscale", false);
+                }  else  {
+                    grayscale = new BoolField(config.rootPanel, "Grayscale Effect", "doGrayscale", true); }
+                ConfigDivision grayscaleOptions = new ConfigDivision(config.rootPanel, "grayscaleOptions");
+                grayscale.onValueChange += (BoolField.BoolValueChangeEvent e) => { grayscaleOptions.interactable = e.value; };
+                exclusiveGrayscale = new BoolField(grayscaleOptions, "Exclusive Grayscale", "exclusivegrayscale", true);
+                grayscaleAmount = new FloatSliderField(grayscaleOptions, "Grayscale Amount", "grayscaleamount", new Tuple<float, float>(0, 2), 1.0f);
+
+                PluginConfig.API.Decorators.ConfigSpace space2 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 4);
+                PluginConfig.API.Decorators.ConfigHeader audio = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- AUDIO --");
+
+                soundEffectVolume = new FloatSliderField(config.rootPanel, "Sound Effects Volume", "effectvolume", new Tuple<float, float>(0, 2), 1);
+                stoppedMusicPitch = new FloatSliderField(config.rootPanel, "Music Pitch in Stopped Time", "musicpitch", new Tuple<float, float>(0, 1), 0.6f);
+                stoppedMusicVolume = new FloatSliderField(config.rootPanel, "Music volume in Stopped Time", "musicvolume", new Tuple<float, float>(0, 1), 0.8f);
+                filterMusic = new BoolField(config.rootPanel, "Filter Music in Stopped Time", "filtermusic", false);
+                stopSound = new EnumField<SoundTypeA>(config.rootPanel, "Timestop Sound", "timestopprofile", SoundTypeA.Classic);
+                stoppedSound = new EnumField<SoundTypeB>(config.rootPanel, "Stopped Time Ambience", "ambienceprofile", SoundTypeB.Classic);
+                startSound = new EnumField<SoundTypeC>(config.rootPanel, "Timestart Sound", "timestartprofile", SoundTypeC.Classic);
+
+                PluginConfig.API.Decorators.ConfigSpace space3 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 4);
+                PluginConfig.API.Decorators.ConfigHeader gameplay = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- GAMEPLAY --");
+
+                maxUpgrades = new IntField(config.rootPanel, "Maximum Number of Upgrades", "maxupgrades", 10);
+                refillMultiplier = new FloatField(config.rootPanel, "Passive Income Multiplier", "refillmultiplier", 0.1f);
+                bonusTimeForParry = new FloatField(config.rootPanel, "Time Juice Refill Per Parry", "bonustimeperparry", 1.0f);
+                specialMode = new BoolField(config.rootPanel, "Special Mode", "specialmode", false);
+                specialMode.interactable = false;
+
+                PluginConfig.API.Decorators.ConfigSpace space4 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 4);
+                PluginConfig.API.Decorators.ConfigHeader colors = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- COLORS --");
+
+                timeJuiceColorNormal = new ColorField(config.rootPanel, "Time Juice Bar Normal Color", "timejuicecolornormal", new Color(1, 1, 0, 1));
+                timeJuiceColorInsufficient = new ColorField(config.rootPanel, "Time Juice Bar Insufficient Color", "timejuicecolorinsufficient", new Color(1, 0, 0, 1));
+                timeJuiceColorUsing = new ColorField(config.rootPanel, "Time Juice Bar Draining Color", "timejuicecolorusing", new Color(1, 0.6f, 0, 1));
+                timeJuiceColorNoCooldown = new ColorField(config.rootPanel, "Time Juice Bar No Cooldown Color", "timejuicecolornocooldown", new Color(0, 1, 1, 1));
+
+                PluginConfig.API.Decorators.ConfigSpace space5 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 4);
+                PluginConfig.API.Decorators.ConfigHeader advanced = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- ADVANCED OPTIONS --");
+
+                ConfigPanel advancedOptions = new ConfigPanel(config.rootPanel, "ADVANCED", "advancedoptions");
+                PluginConfig.API.Decorators.ConfigSpace space6 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 8);
+                forceDowngrade = new BoolField(advancedOptions, "Force Downgrade Arm", "forcedowngrade", true);
+                lowerTreshold = new FloatField(advancedOptions, "Min Time Juice to Stop Time", "lowertreshold", 2.0f);
+                blindScale = new FloatField(advancedOptions, "Blinding TimeScale", "blindscale", 0.2f);
+                antiHpMultiplier = new FloatField(advancedOptions, "Hard Damage Buildup Multiplier", "antihpmultiplier", 30);
+
             }
         }
         void InitializeShaders()
         {
             //.....................SHADERWORK..........................\\
+            Camera c = Player.transform.Find("Main Camera/Virtual Camera").GetComponent<Camera>();
+            if (c.gameObject.GetComponent<Grayscaler>() == null)
+                c.gameObject.AddComponent<Grayscaler>();
+            c.gameObject.GetComponent<Grayscaler>().DoIt();
             HUDRender = new RenderTexture(Screen.width, Screen.height, 0);
             HUDRender.depth = 0;
             HUDRender.Create();
@@ -426,62 +781,113 @@ Takes time to recharge, can be upgraded through the terminals.
             var assembler = Assembly.GetExecutingAssembly();
             string[] resourceNames = assembler.GetManifestResourceNames();
             mls.LogInfo("Scanning embedded resources: " + string.Join(", ", resourceNames));
-            using (var stream = assembler.GetManifestResourceStream("The_Timestopper.timestopper.bundle"))
+            using (var stream = assembler.GetManifestResourceStream("The_Timestopper.timestopper_assets_all.bundle"))
             {
                 if (bundle == null)
                     bundle = AssetBundle.LoadFromStream(stream);
                 else
                     mls.LogInfo("Bundle is already loaded!");
-                if (bundle == null){
+                if (bundle == null)
+                {
                     mls.LogError("AssetBundle failed to load!");
-                    yield break;    }
-                mls.LogInfo(">Assets in bundle:");
+                    yield break;
+                }
+                mls.LogInfo(">Loading bundle asyncroniously:");
+
+                mls.LogInfo(">All assets in bundle:");
                 foreach (string assetName in bundle.GetAllAssetNames())
                 {
                     mls.LogInfo("-->" + assetName);
                 }
-                do  // Beat the shit out of resources until they are done loading
-                {
-                    grayscaleShader = bundle.LoadAsset<Shader>("assets/bundledassets/grayscale.shader");
-                    slappShader = bundle.LoadAsset<Shader>("assets/bundledassets/slapp.shader");
-                    TimestopSounds[(int)SoundTypeA.Classic] = bundle.LoadAsset<AudioClip>("assets/bundledassets/timestop-classic.mp3");
-                    TimestopSounds[(int)SoundTypeA.Alternate] = bundle.LoadAsset<AudioClip>("assets/bundledassets/timestop-alternate.mp3");
-                    TimestopSounds[(int)SoundTypeA.Za_Warudo] = bundle.LoadAsset<AudioClip>("assets/bundledassets/timestop-zawarudo.mp3");
-                    StoppedTimeAmbiences[(int)SoundTypeB.Classic] = bundle.LoadAsset<AudioClip>("assets/bundledassets/timejuice-classic.mp3");
-                    StoppedTimeAmbiences[(int)SoundTypeB.Alternate] = bundle.LoadAsset<AudioClip>("assets/bundledassets/timejuice-alternate.mp3");
-                    StoppedTimeAmbiences[(int)SoundTypeB.Ambience] = bundle.LoadAsset<AudioClip>("assets/bundledassets/timejuice-ambience.mp3");
-                    TimestartSounds[(int)SoundTypeC.Classic] = bundle.LoadAsset<AudioClip>("assets/bundledassets/timestart-classic.mp3");
-                    TimestartSounds[(int)SoundTypeC.Alternate] = bundle.LoadAsset<AudioClip>("assets/bundledassets/timestart-alternate.mp3");
-                    armGoldLogo = bundle.LoadAsset<Texture2D>("assets/bundledassets/timestopper.png");
-                    armGoldObj = bundle.LoadAsset<GameObject>("assets/bundledassets/timestopper.fbx");
-                    armGoldColor = bundle.LoadAsset<Texture2D>("assets/bundledassets/goldarmcolor.fbx");
-                    armGoldAC = bundle.LoadAsset<RuntimeAnimatorController>("assets/bundledassets/ac.controller");
-                    yield return null;
-                } while (grayscaleShader == null);
-                bundle.Unload(false);       //Release the bundle so it doesn't cause leakage?
+                grayscaleShader = bundle.LoadAsset<Shader>("Assets/BundledAssets/Grayscale.shader");
+                if (grayscaleShader == null) mls.LogError("Failed to load Grayscale shader");
+
+                slappShader = bundle.LoadAsset<Shader>("Assets/BundledAssets/Slapp.shader");
+                if (slappShader == null) mls.LogError("Failed to load Slapp shader");
+
+                TimestopSounds[(int)SoundTypeA.Classic] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStop-Classic.mp3");
+                if (TimestopSounds[(int)SoundTypeA.Classic] == null) mls.LogError("Failed to load TimeStop-Classic");
+
+                TimestopSounds[(int)SoundTypeA.Alternate] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStop-Alternate.mp3");
+                if (TimestopSounds[(int)SoundTypeA.Alternate] == null) mls.LogError("Failed to load TimeStop-Alternate");
+
+                TimestopSounds[(int)SoundTypeA.Za_Warudo] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStop-ZaWarudo.mp3");
+                if (TimestopSounds[(int)SoundTypeA.Za_Warudo] == null) mls.LogError("Failed to load TimeStop-ZaWarudo");
+
+                StoppedTimeAmbiences[(int)SoundTypeB.Classic] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeJuice-Classic.mp3");
+                if (StoppedTimeAmbiences[(int)SoundTypeB.Classic] == null) mls.LogError("Failed to load TimeJuice-Classic");
+
+                StoppedTimeAmbiences[(int)SoundTypeB.Alternate] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeJuice-Alternate.mp3");
+                if (StoppedTimeAmbiences[(int)SoundTypeB.Alternate] == null) mls.LogError("Failed to load TimeJuice-Alternate");
+
+                StoppedTimeAmbiences[(int)SoundTypeB.Ambience] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeJuice-Ambience.mp3");
+                if (StoppedTimeAmbiences[(int)SoundTypeB.Ambience] == null) mls.LogError("Failed to load TimeJuice-Ambience");
+
+                TimestartSounds[(int)SoundTypeC.Classic] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStart-Classic.mp3");
+                if (TimestartSounds[(int)SoundTypeC.Classic] == null) mls.LogError("Failed to load TimeStart-Classic");
+
+                TimestartSounds[(int)SoundTypeC.Alternate] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStart-Alternate.mp3");
+                if (TimestartSounds[(int)SoundTypeC.Alternate] == null) mls.LogError("Failed to load TimeStart-Alternate");
+
+                armGoldLogo = bundle.LoadAsset<Texture2D>("Assets/BundledAssets/Timestopper.png");
+                if (armGoldLogo == null) mls.LogError("Failed to load Timestopper logo");
+                if (config != null) config.icon = Sprite.Create(armGoldLogo, new Rect(0, 0, 512, 512), new Vector2(256, 256));
+
+                //var prefab = bundle.LoadAsset<GameObject>("Assets/BundledAssets/gold arm model.fbx");
+                //if (prefab != null) armGoldObj = Instantiate(prefab, transform);
+                //else mls.LogError("Failed to load Timestopper prefab");
+
+                armGoldColor = bundle.LoadAsset<Texture2D>("Assets/BundledAssets/GoldArmColor.png");
+                if (armGoldColor == null) mls.LogError("Failed to load Gold Arm Model");
+
+                armGoldText = bundle.LoadAsset<Texture2D>("Assets/BundledAssets/TextmodeV1Arm4.png");
+                if (armGoldText == null) mls.LogError("Failed to load Gold Arm Textmode");
+
+                armGoldObj = bundle.LoadAsset<GameObject>("Assets/BundledAssets/gold arm model.fbx");
+                if (armGoldObj == null) mls.LogError("Failed to load Gold Arm Model");
+
+                armGoldAC = bundle.LoadAsset<RuntimeAnimatorController>("Assets/BundledAssets/AC.controller");
+                if (armGoldAC == null) mls.LogError("Failed to load AC controller");
+
+                //ConfigMenuPrefab = Instantiate(bundle.LoadAsset<GameObject>("Assets/BundledAssets/Prefabs/configsmenu.prefab"), transform);
+                //if (ConfigMenuPrefab == null) mls.LogError("Failed to load Config Menu Prefab");
+
+                //newRoomColor = bundle.LoadAsset<Texture2D>("Assets/BundledAssets/Texture2D_11_1.png");
+                //if (newRoomColor == null) mls.LogError("Failed to load New Room Texture");
+
+                //newRoomObj = bundle.LoadAsset<GameObject>("Assets/BundledAssets/Timestopper Room.fbx");
+                //if (newRoomObj == null) mls.LogError("Failed to load New Room Obj");
+
+                yield return null;
+
+                //bundle.Unload(false);       //Release the bundle so it doesn't cause leakage?
+                
                 mls.LogInfo("Asset extraction status:");
             }
             mls.LogInfo("Bundle extraction done!");
-            if (Player == null) {
+            if (Player == null)
+            {
                 mls.LogError("Player is null, shaders cannot apply!");
                 LoadDone = true;
                 LoadStarted = false;
-                yield break;        }
-            if (grayscaleShader.isSupported)
-            {
-                Camera c = Player.transform.Find("Main Camera/Virtual Camera").GetComponent<Camera>();
-                if (c.gameObject.GetComponent<Grayscaler>() == null)
-                    c.gameObject.AddComponent<Grayscaler>();
-                c.gameObject.GetComponent<Grayscaler>().DoIt();
-                InitializeShaders();
+                yield break;
             }
-            TimeColor = new Color(1, 1, 0, 1);
+
+            if (grayscaleShader.isSupported && grayscale.value)
+                InitializeShaders();
+
+            TimeColor = Timestopper.timeJuiceColorNormal.value;
             TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
             LoadDone = true;
             LoadStarted = false;
         }
         public IEnumerator EnsureShader()
         {
+            if (!grayscale.value)
+            {
+                mls.LogWarning("Ahader loading interrupted because grayscale effect is off!");
+                yield break;
+            }
             mls.LogInfo("Ensuring shaders load...");
             do
             {
@@ -501,9 +907,11 @@ Takes time to recharge, can be upgraded through the terminals.
         }
         public static GameObject UpdateTerminal(ShopZone ShopComp)
         {
-            if (ShopComp == null) {
+            if (ShopComp == null)
+            {
                 mls.LogError("Shop Component is null, cannot update terminal!");
-                return null; }
+                return null;
+            }
             GameObject Shop = ShopComp.gameObject;
             if (Shop.transform.Find("Canvas/Background/Main Panel/Weapons/Arm Window") == null)
             {
@@ -545,7 +953,7 @@ Takes time to recharge, can be upgraded through the terminals.
                     firstWarning.transform.Find("Button 1").gameObject.SetActive(false);
                     firstWarning.transform.Find("Button 2").gameObject.SetActive(false);
                     firstWarning.transform.Find("Button 3").gameObject.SetActive(false);
-                    firstWarning.transform.Find("Icon"    ).gameObject.SetActive(false);
+                    firstWarning.transform.Find("Icon").gameObject.SetActive(false);
                     firstWarning.transform.Find("Panel/Text Inset/Text").GetComponent<TextMeshProUGUI>().text = @"<color=#FF4343>!!! Extreme Hazard Detected !!!</color> 
 
 You have <color=#FF4343>The Timestopper</color> in your possession. Using this item may cause disturbance in space-time continuum.
@@ -554,7 +962,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     GameObject iconR = Instantiate(Shop.transform.Find("Canvas/Background/Main Panel/Enemies/Enemies Panel/Icon").gameObject, firstWarning.transform.Find("Title"));
                     GameObject iconL = Instantiate(Shop.transform.Find("Canvas/Background/Main Panel/Enemies/Enemies Panel/Icon").gameObject, firstWarning.transform.Find("Title"));
                     iconL.transform.localPosition = new Vector3(-37.1206f, -0.0031f, 0);
-                    iconR.transform.localPosition = new Vector3(97.8522f , -0.0031f, 0);
+                    iconR.transform.localPosition = new Vector3(97.8522f, -0.0031f, 0);
                     firstWarning.transform.Find("Title").GetComponent<TextMeshProUGUI>().text = "WARNING";
                     firstWarning.transform.Find("Title").GetComponent<TextMeshProUGUI>().transform.localPosition = new Vector3(-51.5847f, 189.9997f, 0);
                     GameObject button = firstWarning.transform.Find("Panel/Enter Button").gameObject;
@@ -573,7 +981,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                                             };
                     return firstWarning;
                 }
-            } else
+            }
+            else
             {
                 armPanelGold.GetComponent<VariationInfo>().enabled = true;
                 armPanelGold.GetComponent<VariationInfo>().alreadyOwned = false;
@@ -581,40 +990,15 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
             return null;
         }
-        public void PlayRespectiveSound(bool istimestopped)
-        {
-            if (Player.transform.Find("Main Camera").GetComponent<AudioSource>() == null) {
-                Player.transform.Find("Main Camera").gameObject.AddComponent<AudioSource>();
-            }
-            if (istimestopped != TimeStop)
-                if (istimestopped)
-                {
-                    if (TimestopSounds[(int)stopSound.Value] != null)
-                        Player.transform.Find("Main Camera").GetComponent<AudioSource>().PlayOneShot(TimestopSounds[(int)stopSound.Value]);
-                    if (StoppedTimeAmbiences[(int)stoppedSound.Value] != null)
-                    {
-                        Player.transform.Find("Main Camera").GetComponent<AudioSource>().clip = StoppedTimeAmbiences[(int)stoppedSound.Value];
-                        Player.transform.Find("Main Camera").GetComponent<AudioSource>().Play();
-                        Player.transform.Find("Main Camera").GetComponent<AudioSource>().loop = true;
-                    }
-                } else
-                {
-                    Player.transform.Find("Main Camera").GetComponent<AudioSource>().Stop();
-                    if (TimestartSounds[(int)startSound.Value] != null)
-                        Player.transform.Find("Main Camera").GetComponent<AudioSource>().PlayOneShot(TimestartSounds[(int)startSound.Value]);
-                }
-        }
+        
         public void PreventNull()
         {
             if (Player == null)  //Never lose track of the player, NEVER!
             {
-                Player = GameObject.Find("Player");
+                Player = MonoSingleton<NewMovement>.Instance.gameObject;
                 if (Player == null) return;
-                if (Player.GetComponent<Playerstopper>() == null) Player.AddComponent<Playerstopper>();
-                Fist = Player.transform.Find("Main Camera").GetComponentInChildren<FistControl>();
+                if (Playerstopper.Instance == null) Player.AddComponent<Playerstopper>();
             }
-            if (musicManager == null)
-                musicManager = GameObject.Find("MusicManager");
             if (Player.GetComponent<TerminalUpdater>() == null)
             {
                 Player.AddComponent<TerminalUpdater>();
@@ -623,6 +1007,42 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             {
                 MenuCanvas = FindRootGameObject("Canvas");
             }
+        }
+        public static Shader FindShader(string name)
+        {
+            mls.LogInfo("shearching ULTRAKILL shaders for: " + name);
+            foreach (Shader shader in Resources.FindObjectsOfTypeAll<Shader>())
+            {
+                mls.LogInfo("-> " + shader.name);
+                if (shader.name == name)
+                {
+                    mls.LogError("found shader!");
+                    return shader;
+                }
+            }
+            mls.LogError("Couldn't find!");
+            return null;
+        }
+        public static Texture2D GrayscaleImage(Texture2D original)
+        {
+            if (!original.isReadable) {
+                mls.LogError("Texture is not readable!");
+                return null;
+            }
+            Texture2D grayscaledTexture = new Texture2D(original.width, original.height, original.format, false);
+            Color[] pixels = original.GetPixels();
+
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                Color pixel = pixels[i];
+                float gray = (pixel.r + pixel.g + pixel.b) / 3;
+                pixels[i] = new Color(gray, gray, gray, pixel.a);
+            }
+
+            grayscaledTexture.SetPixels(pixels);
+            grayscaledTexture.Apply();
+
+            return grayscaledTexture;
         }
         public IEnumerator LoadHUD()
         {
@@ -676,53 +1096,29 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             mls.LogInfo("Golden Time Alt HUD created successfully.");
             yield break;
         }
-        public IEnumerator LoadGoldArm()
-        {
-            float elapsedTime = 0;
-            mls.LogInfo("Loading Golden Arm into game...");
-            do
-            {
-                elapsedTime += Time.unscaledDeltaTime;
-                if (elapsedTime > 5)
-                    yield break;
-                yield return null;
-            } while (armGoldAC == null);
-            GoldArm = Instantiate(armGoldObj, Player.transform.Find("Main Camera/Punch").transform);
-            GoldArm.name = "Arm Gold";
-            GoldArm.layer = 13;
-            foreach (Transform t in GoldArm.transform)
-            {
-                t.gameObject.layer = 13;
-            }
-            GoldArm.AddComponent<Animator>();
-            GoldArm.GetComponent<Animator>().runtimeAnimatorController = armGoldAC;
-            GoldArm.transform.localEulerAngles = new Vector3(72.867f, 60.269f, 160.903f);
-            //GO.transform.localEulerAngles = new Vector3(74.867f, 75.269f, 161.903f);
-            GoldArm.transform.localPosition = new Vector3(-0.8f, -0.8f, -2.0f);
-            GoldArm.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-            GoldArm.SetActive((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm));
-            Player.transform.Find("Main Camera/Punch").GetComponent<FistControl>().goldArm = new AssetReference();
-            /////////// Player Moement Fix \\\\\\\\\\\\\\
-            mls.LogInfo("Golden Arm created successfully.");
-            yield break;
-        }
-        public IEnumerator ModifySettingsPage()
+        public IEnumerator ModifySettingsPage() // for experiments, don't read
         {
             mls.LogWarning("creating instances...");
             SettingsPage sp = SettingsPage.CreateInstance<SettingsPage>();
             SettingsCategory sc = SettingsCategory.CreateInstance<SettingsCategory>();
-            SettingsItem item = SettingsItem.CreateInstance<SettingsItem>();
+            sc.items = new List<SettingsItem> { };
+            //foreach (object C in CM.BuildAll())
+            //{
+            //    SettingsItem item = SettingsItem.CreateInstance<SettingsItem>();
+            //    //Config<float> tester = new Config<float>(0);
+            //    item.buttonLabel = (string)C.GetType().GetProperty("Name").GetValue(C) + "button";
+            //    item.label = (string)C.GetType().GetProperty("Name").GetValue(C);
+            //    item.name = (string)C.GetType().GetProperty("Name").GetValue(C);
+            //    item.style = SettingsItemStyle.Normal;
+            //    item.itemType = SettingsItemType.Slider;
+            //    item.sliderConfig = new SliderConfig();
+            //    sc.items.Add(item);
+            //    //item.dropdownList = new string[] { "test1", "test2", "test3" };
+            //    //item.sideNote = "this is a literal side note, you can change it or set it to any value you want";
+            //    //item.dropdownList = new string[] { "one", "two", "three" };
+            //}
             mls.LogWarning("Created instances");
             sc.title = "Test Title";
-            item.buttonLabel = "test button";
-            item.label = "test";
-            item.name = "test";
-            item.style = SettingsItemStyle.Normal;
-            item.dropdownList = new string[] { "test1", "test2", "test3" };
-            item.itemType = SettingsItemType.Slider;
-            item.sideNote = "this is a literal side note, you can change it or set it to any value you want";
-            item.dropdownList = new string[] { "one", "two", "three" };
-            sc.items = new List<SettingsItem> { item };
             sc.name = "TestCategory";
             sc.title = "testCategory";
             sc.description = "this is a test category, it will be used for Timeless Config";
@@ -762,24 +1158,38 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name != "Bootstrap" && LoadDone &&
-                scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
+            mls.LogInfo(TimestopperProgress.ToString());
+            if (scene.name == "b3e7f2f8052488a45b35549efb98d902" /*main menu*/)
             {
-                mls.LogWarning("Main Menu Detected");
-                //StartCoroutine(ModifySettingsPage());
+                mls.LogWarning("main menu loaded");
+                GameObject goldArmText = Instantiate(FindRootGameObject("Canvas").transform.Find("Main Menu (1)/V1/Knuckleblaster").gameObject, FindRootGameObject("Canvas").transform.Find("Main Menu (1)/V1"));
+                goldArmText.GetComponent<UnityEngine.UI.Image>().sprite = Sprite.Create(armGoldText, new Rect(0, 0, armGoldText.width, armGoldText.height), Vector2.zero);
+                goldArmText.name = "Timestopper";
+                goldArmText.transform.localPosition = Vector3.zero;
+                goldArmText.transform.localScale = Vector3.one * 0.93f;
+                goldArmText.SetActive((bool)TimestopperProgress.ArmStatus(TProgress.hasArm));
+                GameObject goldArmText2 = Instantiate(FindRootGameObject("Canvas").transform.Find("Difficulty Select (1)/Info Background/V1/Knuckleblaster").gameObject, FindRootGameObject("Canvas").transform.Find("Difficulty Select (1)/Info Background/V1"));
+                goldArmText2.GetComponent<UnityEngine.UI.Image>().sprite = Sprite.Create(armGoldText, new Rect(0, 0, armGoldText.width, armGoldText.height), Vector2.zero);
+                goldArmText2.GetComponent<UnityEngine.UI.Image>().color = new Color(0.125f, 0.125f, 0.125f, 1);
+                goldArmText2.transform.localPosition = Vector3.zero;
+                goldArmText2.transform.localScale = Vector3.one * 0.93f;
+                goldArmText2.SetActive((bool)TimestopperProgress.ArmStatus(TProgress.hasArm));
             }
             TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
             if (scene.name != "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ &&
                 scene.name != "Bootstrap" && LoadDone &&
                 scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
             {
+                if (Playerstopper.Instance == null)
+                    MonoSingleton<NewMovement>.Instance.gameObject.GetComponent<Playerstopper>();
+                if (forceDowngrade.value)
+                    TimestopperProgress.ForceDownngradeArm();
                 StartCoroutine(LoadHUD());
-                StartCoroutine(LoadGoldArm());
                 StartCoroutine(EnsureShader());
                 StatsManager.checkpointRestart += ResetGoldArm;
                 if (firstLoad && !(bool)TimestopperProgress.ArmStatus(TProgress.hasArm)) //display the message for newcomers
                 {
-                    MonoSingleton<HudMessageReceiver>.Instance.SendHudMessage( ARM_NEW_MESSAGE, "", "", 2);
+                    MonoSingleton<HudMessageReceiver>.Instance.SendHudMessage(ARM_NEW_MESSAGE, "", "", 2);
                     messageTimer.done += () =>
                     {
                         MonoSingleton<HudMessageReceiver>.Instance.Invoke("Done", 0);
@@ -787,8 +1197,16 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     };
                     messageTimer.SetTimer(6, true);
                 }
-                MonoSingleton<StyleHUD>.Instance.RegisterStyleItem("timestopper.timestop", TIMESTOP_STYLE);
-            } else
+                MonoSingleton<StyleHUD>.Instance.RegisterStyleItem("timestopper.timestop", TIMESTOP_STYLE); // register timestop style
+                //newRoom = Instantiate(newRoomObj, transform);
+                //Shader s = FindShader("ULTRAKILL/Master");
+                //if (s != null)
+                //{
+                //    newRoom.GetComponent<MeshRenderer>().material = new Material(s);
+                //    newRoom.GetComponent<MeshRenderer>().material.mainTexture = newRoomColor;
+                //}
+            }
+            else
             {
                 timeStopper = CStopTime(0);
                 timeStarter = CStartTime(0);
@@ -796,6 +1214,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             // Update the Level
             if (ConfirmLevel("VIOLENCE /// FIRST")) // Add the door to the level
             {
+                mls.LogInfo("violence level detected");
                 GameObject newdoor = Instantiate(GameObject.Find("Crossroads -> Forward Hall"), GameObject.Find("Stairway Down").transform);
                 newdoor.name = "Stairway Down -> Gold Arm Hall";
                 newdoor.transform.position = new Vector3(-14.6292f, -25.0312f, 590.2311f);
@@ -842,9 +1261,14 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 TheCube.GetComponent<MeshRenderer>().enabled = false;
                 TheCube.transform.position = newaltar.transform.position + new Vector3(0, 2, 0);
                 GameObject itemArm = Instantiate(armGoldObj, TheCube.transform);
-                itemArm.transform.localScale *= 0.17f;
-                itemArm.transform.localPosition = new Vector3(-1.1f, -0.1f, -1.3f);
-                itemArm.transform.localEulerAngles = new Vector3(10.0f, 0f, 0f);
+                itemArm.GetComponentInChildren<SkinnedMeshRenderer>().material = new Material(FindShader("ULTRAKILL/Master"));
+                itemArm.GetComponentInChildren<SkinnedMeshRenderer>().material.mainTexture = armGoldColor;
+                itemArm.GetComponentInChildren<SkinnedMeshRenderer>().updateWhenOffscreen = true;
+                itemArm.transform.GetChild(1).GetComponentInChildren<SkinnedMeshRenderer>().rayTracingMode = UnityEngine.Experimental.Rendering.RayTracingMode.DynamicGeometry;
+                itemArm.transform.localScale = Vector3.one * 5;
+                itemArm.transform.localPosition = new Vector3(0f, 1f, 0f);
+                itemArm.transform.GetChild(0).localPosition = new Vector3(0f, 0f, 0f);
+                itemArm.transform.localEulerAngles = new Vector3(0.0f, 0f, 0f);
                 TheCube.transform.GetChild(0).GetChild(0).GetChild(0).GetChild(0).localEulerAngles = new Vector3(0f, 0f, 50.0f);
                 TheCube.SetActive(false);
                 altarcomp.activateOnSuccess = new GameObject[1] { TheCube };
@@ -861,19 +1285,26 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 mls.LogInfo("Added The Cube");
             }
             // Cybergrind Music Explorer Compatability
-            if (scene.name == "9240e656c89994d44b21940f65ab57da" && Chainloader.PluginInfos.ContainsKey("dev.flazhik.jukebox"))
+            if (scene.name == "9240e656c89994d44b21940f65ab57da")
             {
                 cybergrind = true;
-                Type Comp = Type.GetType("Jukebox.Components.NowPlayingHud, Jukebox");
-                if (Comp != null)
-                {   Component C = FindObjectOfType(Comp) as Component;
-                    if (C != null) C.gameObject.transform.localPosition += new Vector3(0, 60, 0);
-                    else mls.LogError("Component C is null!");
+                if (Chainloader.PluginInfos.ContainsKey("dev.flazhik.jukebox"))
+                {
+                    Compatability_JukeBox = true;
+                    Type Comp = Type.GetType("Jukebox.Components.NowPlayingHud, Jukebox");
+                    if (Comp != null)
+                    {
+                        UnityEngine.Component C = FindObjectOfType(Comp) as UnityEngine.Component;
+                        if (C != null) C.gameObject.transform.localPosition += new Vector3(0, 60, 0);
+                        else mls.LogError("Component C is null!");
+                    }
+                    else mls.LogError("Could not get Jukebox.Components.NowPlayingHud");
                 }
-                else mls.LogError("Could not get Jukebox.Components.NowPlayingHud");
-            } else if (Chainloader.PluginInfos.ContainsKey("dev.flazhik.jukebox") ||!Chainloader.PluginInfos.ContainsKey("dev.flazhik.jukebox"))
+            }
+            else
             {
                 cybergrind = false;
+                Compatability_JukeBox = false;
             }
         }
         public void OnSceneUnloaded(Scene scene)
@@ -882,32 +1313,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 scene.name != "Bootstrap" && LoadDone &&
                 scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/ &&
                 realTimeScale < 1)
-            { 
+            {
                 StartTime(0, true);
             }
-        }
-        void Awake()
-        {
-            if (Instance == null) { Instance = this; }
-
-            mls = BepInEx.Logging.Logger.CreateLogSource(GUID);
-            mls.LogInfo("The Timestopper has awakened!");
-            //foreach(var s in Chainloader.PluginInfos)
-            //    mls.LogInfo(s.Key);
-            InitializeConfig();
-
-            harmony.PatchAll();
-
-            base.StartCoroutine(LoadBundle());   //Load all assets
-
-            //***********DEBUG**************\\
-            TheCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            TheCube.name = "The Cube";
-//          \\******************************//
-
-
-            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
-            UnityEngine.SceneManagement.SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
 
 
@@ -925,28 +1333,26 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 }
             else
                 if (currentLevelInfo.GetComponent<StockMapInfo>().layerName == LayerName)
-                    return true;
+                return true;
             return false;
         }
         public IEnumerator CStopTime(float speed)
         {
             StopCoroutine(timeStarter);
             StoppedTimeAmount = 0;
-            Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.GetComponent<Animator>().Play("Stop");
-            Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.GetComponent<Animator>().speed = animationSpeed.Value;
-            if (filterMusic.Value)
-                musicManager.GetComponent<MusicManager>().FilterMusic();
-            PlayRespectiveSound(true);
+            //Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.GetComponent<Animator>().speed = animationSpeed.value;
+            if (filterMusic.value)
+                MonoSingleton<MusicManager>.Instance.FilterMusic();
             Physics.simulationMode = SimulationMode.Script;
             foreach (Rigidbody R in FindObjectsOfType<Rigidbody>())  //Save everyone's states and freeze them except Player
             {
                 GameObject G = R.gameObject;
-                if (G.GetComponent<Playerstopper>() == null)
+                if (Playerstopper.Instance.gameObject != G)
                 {
-                    if (G.GetComponent<ConstraintSaver>() == null)
-                        G.AddComponent<ConstraintSaver>();
-                    G.GetComponent<ConstraintSaver>().enabled = true;
-                    G.GetComponent<ConstraintSaver>().Freeze();
+                    if (G.GetComponent<RigidbodyStopper>() == null)
+                        G.AddComponent<RigidbodyStopper>();
+                    G.GetComponent<RigidbodyStopper>().enabled = true;
+                    G.GetComponent<RigidbodyStopper>().Freeze();
                 }
             }
             foreach (AudioSource A in FindObjectsOfType<AudioSource>())  //Add the pitching effect to all AudioSources except the ones on Player
@@ -956,7 +1362,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 if (A.gameObject.transform.IsChildOf(Player.transform) && A.updateMode == AnimatorUpdateMode.Normal)
                     A.updateMode = AnimatorUpdateMode.UnscaledTime;
 
-            Player.GetComponent<Playerstopper>().Awake();
             if (speed == 0)
             {
                 Time.timeScale = 0;
@@ -966,8 +1371,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
             do
             {
-                Time.timeScale -= Time.unscaledDeltaTime / speed;
-                realTimeScale -= Time.unscaledDeltaTime / speed;
+                Time.timeScale -= Time.unscaledDeltaTime / speed * (MonoSingleton<OptionsManager>.Instance.paused ? 0 : 1);
+                realTimeScale -= Time.unscaledDeltaTime / speed * (MonoSingleton<OptionsManager>.Instance.paused ? 0 : 1);
                 yield return null;
             } while (Time.timeScale > Time.unscaledDeltaTime / speed);
             Time.timeScale = 0;
@@ -977,29 +1382,29 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         public IEnumerator CStartTime(float speed, bool preventStyle = false)
         {
             StopCoroutine(timeStopper);
-            Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.GetComponent<Animator>().Play("Release");
-            if (filterMusic.Value)  
-                musicManager.GetComponent<MusicManager>().UnfilterMusic();
-            PlayRespectiveSound(false);
+            if (filterMusic.value)
+                MonoSingleton<MusicManager>.Instance.UnfilterMusic();
             Physics.simulationMode = SimulationMode.FixedUpdate;
             foreach (Animator A in FindObjectsOfType<Animator>())  // Make animations not work in stopped time when time isn't stopped
                 if (A.gameObject.transform.IsChildOf(Player.transform) && A.updateMode == AnimatorUpdateMode.UnscaledTime)
                     A.updateMode = AnimatorUpdateMode.Normal;
-            if (speed == 0) {
+            if (speed == 0)
+            {
                 Time.timeScale = 1;
                 realTimeScale = 1;
                 StoppedTimeAmount = 0;
-                yield break;            }
+                yield break;
+            }
             if (Time.timeScale < 0)
                 Time.timeScale = 0;
             do
             {
-                Time.timeScale += Time.unscaledDeltaTime / speed;
-                realTimeScale += Time.unscaledDeltaTime / speed;
+                Time.timeScale += Time.unscaledDeltaTime / speed * (MonoSingleton<OptionsManager>.Instance.paused? 0 : 1);
+                realTimeScale += Time.unscaledDeltaTime / speed * (MonoSingleton<OptionsManager>.Instance.paused ? 0 : 1)   ;
                 yield return null;
             } while (Time.timeScale < 1);
             if (!preventStyle && StoppedTimeAmount > 2)
-                MonoSingleton<StyleHUD>.Instance.AddPoints((int)StoppedTimeAmount*100, "timestopper.timestop");
+                MonoSingleton<StyleHUD>.Instance.AddPoints((int)StoppedTimeAmount * 100, "timestopper.timestop", Playerstopper.Instance.gameObject);
             StoppedTimeAmount = 0;
             Time.timeScale = 1;
             realTimeScale = 1;
@@ -1025,30 +1430,24 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 StoppedTimeAmount += playerDeltaTime * (1.0f - realTimeScale);
                 if (TimeLeft < 0)
                     TimeLeft = 0;
-                TimeColor.g = 0.6f;
+                TimeColor = timeJuiceColorUsing.value;
             }
             else
             {
                 if (realTimeScale <= 0.3f)
                     Player.GetComponent<NewMovement>().walking = false;
-                TimeLeft += Time.deltaTime * refillMultiplier.Value;
+                TimeLeft += Time.deltaTime * refillMultiplier.value;
                 if (TimeLeft > (float)TimestopperProgress.ArmStatus(TProgress.maxTime))
                     TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
-                if (TimeLeft < lowerTreshold.Value)
-                    TimeColor.g = 0;
+                if (TimeLeft < lowerTreshold.value)
+                    TimeColor = timeJuiceColorInsufficient.value;
                 else
-                    TimeColor.g = 1;
+                    TimeColor = timeJuiceColorNormal.value;
             }
             if (ULTRAKILL.Cheats.NoWeaponCooldown.NoCooldown)
             {
                 TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
-                TimeColor.r = 0;
-                TimeColor.b = 1;
-            }
-            else
-            {
-                TimeColor.r = 1;
-                TimeColor.b = 0;
+                TimeColor = timeJuiceColorNoCooldown.value;
             }
         }
         public void UpdateHUD()
@@ -1079,7 +1478,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                         TimeHUD[1].SetActive(true);
                         TimeHUD[1].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, 4);
                         TimeHUD[1].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().color = (G * 5 + TimeColor) * (Time.unscaledDeltaTime) / (6 * Time.unscaledDeltaTime);
-                    } else if (TimeHUD[2].transform.Find("Text (TMP)").gameObject.activeInHierarchy)
+                    }
+                    else if (TimeHUD[2].transform.Find("Text (TMP)").gameObject.activeInHierarchy)
                     {
                         TimeHUD[2].SetActive(true);
                         TimeHUD[2].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, 4);
@@ -1092,13 +1492,54 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 }
             }
         }
-
-        private void Update()
+        public static bool frameLaterer = false;
+        private void HandleHitstop()
         {
-            messageTimer.Update();
+            if ((float)AccessTools.Field(typeof(TimeController), "currentStop").GetValue(MonoSingleton<TimeController>.Instance) <= 0)
+            {
+                if (playerTimeScale <= 0)
+                {
+                    playerTimeScale = 1;
+                    Time.timeScale = 0;
+                    MonoSingleton<TimeController>.Instance.timeScaleModifier = 1;
+                    (AccessTools.Field(typeof(TimeController), "parryFlash").GetValue(MonoSingleton<TimeController>.Instance) as GameObject).SetActive(false);
+                    foreach (Transform child in Player.transform.Find("Main Camera/New Game Object").transform)
+                        Destroy(child.gameObject);
+                }
+                return;
+            }
+            else
+            {
+                frameLaterer = true;
+                playerTimeScale = 0;
+                Time.timeScale = 0;
+            }
+        }
+        private bool menuOpenLastFrame = false;
+        private void HandleMenuPause()
+        {
+            if (MonoSingleton<OptionsManager>.Instance.paused)
+                playerTimeScale = 0;
+            else if (menuOpenLastFrame != MonoSingleton<OptionsManager>.Instance.paused)
+                playerTimeScale = 1;
+            menuOpenLastFrame = MonoSingleton<OptionsManager>.Instance.paused;
+        }
+        public void FakeFixedUpdate()
+        {
+            if (TimeStop)
+            {
+                Time.timeScale = realTimeScale;
+                if (playerDeltaTime > 0)
+                    Physics.Simulate(Time.fixedDeltaTime * (1 - realTimeScale));   // Manually simulate Rigidbody physics
+            }
+        }
+        float time = 0;
+        private void LateUpdate()
+        {
             if (SceneManager.GetActiveScene().name == "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ ||
             SceneManager.GetActiveScene().name == "Bootstrap" ||
-            SceneManager.GetActiveScene().name == "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)   {
+            SceneManager.GetActiveScene().name == "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
+            {
                 return;
             }
             if (cybergrind) //reset time juice when wave is done
@@ -1110,65 +1551,96 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 }
             }
             PreventNull();
-            if (Player == null)
-                return;
-            // trigger function
-            if (((UnityInput.Current.GetKeyDown(stopKey.Value)) && Player.transform.Find("Main Camera/Punch/Arm Gold") != null && (bool)TimestopperProgress.ArmStatus(TProgress.equippedArm))
-                || (TimeStop && TimeLeft <= 0.0f)
-                || (Player.GetComponent<NewMovement>().dead && TimeStop) )
-            {
-                if (MenuCanvas.transform.Find("PauseMenu").gameObject.activeSelf ||
-                    MenuCanvas.transform.Find("OptionsMenu").gameObject.activeSelf) //if game paused
-                    return;
-                if (!Player.GetComponent<NewMovement>().dead) {
-                    Player.GetComponent<Playerstopper>().enabled = true;
-                }
-                //====================================[ GLOBAL TIME STOP ]================================\\
-                if (!TimeStop && !Fist.shopping && TimeColor.g == 1 /*smurt optimization to avoid separate variable*/)
-                {
-                    StopTime(stopSpeed.Value);
-                    mls.LogInfo("Time stops!");
-                }
-                else 
-                {
-                    StartTime(startSpeed.Value);
-                    BlindCheat.Disable();
-                    mls.LogInfo("Time resumes.");
-                }
-            }
             UpdateTimeJuice();
             UpdateHUD();
-            if (Player.GetComponent<NewMovement>().dead){
+            if (MonoSingleton<NewMovement>.Instance.dead && TimeStop)
+            {
                 StartTime(0);
+            }
+            if (TimeStop)
+            {
+                foreach (Rigidbody R in FindObjectsOfType<Rigidbody>())  // Freeze anything that has recently been created
+                {
+                    if (R.gameObject.GetComponent<RigidbodyStopper>() == null && R.gameObject != MonoSingleton<NewMovement>.Instance.gameObject)
+                    {
+                        R.gameObject.AddComponent<RigidbodyStopper>();
+                        R.gameObject.GetComponent<RigidbodyStopper>().Freeze();
+                    }
+                }
+                HandleHitstop();
+                HandleMenuPause();
+                time += Time.unscaledDeltaTime;
+                if (time > Time.maximumDeltaTime)
+                    time = Time.maximumDeltaTime;
+                while (time >= Time.fixedDeltaTime)
+                {
+                    time -= Time.fixedDeltaTime;
+                    FakeFixedUpdate();
+                }
             }
         }
     }
 
-    public class Audiopitcher : MonoBehaviour{
-        public void Update(){
-            if (GetComponent<AudioSource>() != null && Timestopper.realTimeScale <= 1.0f)
+    public class Audiopitcher : MonoBehaviour
+    {
+        AudioSource audio;
+        float originalPitch = 1;
+        bool music = false;
+        bool awake = true;
+        public void LateUpdate()
+        {
+            if (GetComponent<AudioSource>() == null)
+                return;
+            if (awake)
             {
-                if (transform.parent != null)
-                {
-                    if (GetComponent<AudioSource>() == MonoSingleton<MusicManager>.Instance.targetTheme)
-                        if (Timestopper.realTimeScale > 0.0f)
-                        {
-                            GetComponent<AudioSource>().pitch = Timestopper.realTimeScale*(1-Timestopper.stoppedMusicPitch.Value) + Timestopper.stoppedMusicPitch.Value;
-                            MonoSingleton<MusicManager>.Instance.volume = Timestopper.realTimeScale*(1-Timestopper.stoppedMusicVolume.Value) + Timestopper.stoppedMusicVolume.Value;
-                        }
-                        else
-                        {
-                            GetComponent<AudioSource>().pitch = Timestopper.stoppedMusicPitch.Value;
-                            MonoSingleton<MusicManager>.Instance.volume = Timestopper.stoppedMusicVolume.Value;
-                        }
-                } else
-                {
-                    if (Timestopper.realTimeScale > 0.0f)
-                        GetComponent<AudioSource>().pitch = Timestopper.realTimeScale;
-                    else
-                        GetComponent<AudioSource>().pitch = 0;
-                }
+                audio = GetComponent<AudioSource>();
+                originalPitch = audio.pitch;
+                if ((Timestopper.cybergrind && gameObject == GameObject.Find("MusicChanger/Battle Theme")) || (audio == MonoSingleton<MusicManager>.Instance.targetTheme))
+                    music = true;
+                awake = false;
             }
+            if (Timestopper.realTimeScale == 1.0f)
+            {
+                audio.pitch = originalPitch;
+                originalPitch = audio.pitch;
+                return;
+            }
+            if (!music || audio == MonoSingleton<MusicManager>.Instance.targetTheme)
+            {
+                audio.pitch = originalPitch * Timestopper.realTimeScale;
+            } else
+            {
+                audio.pitch = Timestopper.realTimeScale * (1 - Timestopper.stoppedMusicPitch.value) + Timestopper.stoppedMusicPitch.value;
+                MonoSingleton<MusicManager>.Instance.volume = Timestopper.realTimeScale * (1 - Timestopper.stoppedMusicVolume.value) + Timestopper.stoppedMusicVolume.value;
+            }
+
+
+            //if (GetComponent<AudioSource>() != null && Timestopper.realTimeScale <= 1.0f)
+            //{
+            //    if (transform.parent != null)
+            //    {
+            //        if (GetComponent<AudioSource>() == MonoSingleton<MusicManager>.Instance.targetTheme)
+            //            if (Timestopper.realTimeScale > 0.0f)
+            //            {
+            //                GetComponent<AudioSource>().pitch = Timestopper.realTimeScale * (1 - Timestopper.stoppedMusicPitch.value) + Timestopper.stoppedMusicPitch.value;
+            //                MonoSingleton<MusicManager>.Instance.volume = Timestopper.realTimeScale * (1 - Timestopper.stoppedMusicVolume.value) + Timestopper.stoppedMusicVolume.value;
+            //            }
+            //            else
+            //            {
+            //                GetComponent<AudioSource>().pitch = Timestopper.stoppedMusicPitch.value;
+            //                MonoSingleton<MusicManager>.Instance.volume = Timestopper.stoppedMusicVolume.value;
+            //            }
+            //    }
+            //    else
+            //    {
+            //        if (Timestopper.realTimeScale > 0.0f)
+            //        {
+            //            GetComponent<AudioSource>().pitch = Timestopper.realTimeScale;
+            //        }
+            //        else
+            //            GetComponent<AudioSource>().pitch = 0;
+            //    }
+            //}
         }
     }
 
@@ -1184,7 +1656,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Image>().sprite =
                                 armInfoGold.transform.Find("Panel/Back Button").GetComponent<UnityEngine.UI.Image>().sprite;
             armInfoGold.transform.Find("Panel/Description").GetComponent<TMPro.TextMeshProUGUI>().text = Timestopper.ARM_DESCRIPTION + (string)TimestopperProgress.ArmStatus(TProgress.upgradeText);
-            if ((int)TimestopperProgress.ArmStatus(TProgress.upgradeCount) < Timestopper.maxUpgrades.Value)
+            if ((int)TimestopperProgress.ArmStatus(TProgress.upgradeCount) < Timestopper.maxUpgrades.value)
             {
                 if (GameProgressSaver.GetMoney() > (int)TimestopperProgress.ArmStatus(TProgress.upgradeCost))
                 {
@@ -1200,7 +1672,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Button>().interactable = false;
                     armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<UnityEngine.UI.Image>().color = Color.red;
                 }
-            } else
+            }
+            else
             {
                 armInfoGold.transform.Find("Panel/Purchase Button/Text").GetComponent<TextMeshProUGUI>().text = "<color=#FFEE43>MAX</color>";
                 armInfoGold.transform.Find("Panel/Purchase Button").GetComponent<ShopButton>().failure = true;
@@ -1235,7 +1708,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         public float Grayscale;
         public void DoIt()
         {
-            if (!Timestopper.grayscale.Value || !Timestopper.grayscaleShader.isSupported)
+            if (!Timestopper.grayscale.value || !Timestopper.grayscaleShader.isSupported)
                 return;
             if (!R.IsCreated())
                 R.Create();
@@ -1256,19 +1729,19 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 if (!Timestopper.grayscaleShader.isSupported)
                 {
                     Timestopper.mls.LogError("grayscaler attempted grayscale but the shader was null, turning geayscale effect off!");
-                    Timestopper.grayscale.Value = false;
+                    Timestopper.grayscale.value = false;
                 }
-            if (Timestopper.grayscale.Value)
+            if (Timestopper.grayscale.value)
                 transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = false;
             else
                 transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = true;
         }
         void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (_material != null && _slapper != null && Timestopper.grayscale.Value)
+            if (_material != null && _slapper != null && Timestopper.grayscale.value)
             {
-                if (Timestopper.exclusiveGrayscale.Value)
-                    Grayscale = 1 - Timestopper.realTimeScale;
+                if (Timestopper.exclusiveGrayscale.value)
+                    Grayscale = (1 - Timestopper.realTimeScale);
                 else
                     Grayscale = 1 - Time.timeScale;
 
@@ -1277,7 +1750,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 GL.Clear(true, true, Color.clear);
                 RenderTexture.active = rt;
 
-                _material.SetFloat("_Grayscale", Grayscale*Timestopper.grayscaleAmount.Value);
+                _material.SetFloat("_Grayscale", Grayscale * Timestopper.grayscaleAmount.value);
                 camera.CopyFrom(transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>());
                 camera.targetTexture = R;
                 camera.Render();
@@ -1286,8 +1759,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 Graphics.Blit(T, destination, _slapper);
 
             }
-            else {
-                if (!Timestopper.grayscale.Value || !Timestopper.grayscaleShader.isSupported)
+            else
+            {
+                if (!Timestopper.grayscale.value || !Timestopper.grayscaleShader.isSupported)
                 {
                     transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = true;
                     Timestopper.Player.transform.Find("Main Camera/HUD Camera").GetComponent<Camera>().targetTexture = null;
@@ -1307,147 +1781,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
     }
 
-    
-   
-
-    // ################################################  PATCHWORK  ######################################################## \\
-    /*                                DeltaTimeReplacer replaces the following code:                                         *\
-     *                                Time.deltaTime -> Timestopper.playerDeltaTime                                          *
-    \*                                Time.fixedDeltaTime -> Time.unscaledFixedDeltaTime                                     */
-    public class DeltaTimeReplacer
-    {
-        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, string name = "CODE")
-        {
-            var deltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
-            var fixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
-            var playerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
-            //var unscaledGetter = AccessTools.PropertyGetter(typeof(Time), nameof(Time.unscaledDeltaTime));
-            //var fixedUnscaledDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedUnscaledDeltaTime));
-            var playerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
-            ManualLogSource mls = BepInEx.Logging.Logger.CreateLogSource(Timestopper.GUID);
-
-            mls.LogWarning($"Transpiling " + name + "...");
-            foreach (var i in instructions)
-            {
-                if (i.Calls(deltaTimeG))
-                {
-                    var newInst = new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
-                    newInst.labels.AddRange(i.labels);
-                    newInst.blocks.AddRange(i.blocks);
-                    yield return newInst;
-                    //mls.LogInfo($"modified deltaTime");
-                }
-                else if (i.Calls(fixedDeltaTimeG))
-                {
-                    var newInst = new CodeInstruction(OpCodes.Call, playerFixedDeltaTimeG);
-                    newInst.labels.AddRange(i.labels);
-                    newInst.blocks.AddRange(i.blocks);
-                    yield return newInst;
-                    //mls.LogInfo($"modified fixedDeltaTime");
-                }
-                else
-                {
-                    yield return i;
-                }
-            }
-        }
-
-    }
-
-    [HarmonyPatch(typeof(NewMovement), "Parry")]
-    public class ParryTimeFiller
-    {
-        [HarmonyPrefix]
-        static bool Prefix()
-        {
-            if (!Timestopper.TimeStop)
-                Timestopper.TimeLeft += Timestopper.bonusTimeForParry.Value;
-            return true;
-        }
-    }
-
-    [HarmonyPatch(typeof(TimeSince), "op_Implicit", new Type[] { typeof(TimeSince) })]
-    public class TimeSinceReplacer1
-    {
-        [HarmonyPrefix]
-        static bool Prefix(ref float __result, TimeSince ts)
-        {
-            if (Timestopper.UnscaleTimeSince)
-            {
-                __result = Time.unscaledTime - (float)AccessTools.Field(typeof(TimeSince), "time").GetValue(ts);
-                return false;
-            }
-            return true;
-        }
-    }
-    [HarmonyPatch(typeof(TimeSince), "op_Implicit", new Type[] { typeof(float) })]
-    public class TimeSinceReplacer2
-    {
-        [HarmonyPrefix]
-        static bool Prefix(ref TimeSince __result, float ts)
-        {
-            if (Timestopper.UnscaleTimeSince)
-            {
-                object result = new TimeSince();
-                AccessTools.Field(typeof(TimeSince), "time").SetValue(result, Time.unscaledTime - ts);
-                __result = (TimeSince)result;
-                return false;
-            }
-            return true;
-        }
-    }
-
-    [HarmonyPatch(typeof(WeaponCharges), "Update")] public class TranspileWeaponCharges0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Update");}
-    [HarmonyPatch(typeof(WeaponCharges), "Charge")] public class TranspileWeaponCharges1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Charge");}
-    [HarmonyPatch(typeof(GunControl), "Update")] public class TranspileGunControl { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[GunControl]=> Update");}
-    [HarmonyPatch(typeof(Revolver), "Update")] public class TranspileRevolver0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Revolver]=> Update");}
-    [HarmonyPatch(typeof(Revolver), "LateUpdate")] public class TranspileRevolver1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Revolver]=> LateUpdate");}
-    [HarmonyPatch(typeof(ShotgunHammer), "UpdateMeter")] public class TranspileShotgunHammer0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[ShotgunHammer]=> UpdateMeter");}
-    [HarmonyPatch(typeof(ShotgunHammer), "Update")] public class TranspileShotgunHammer1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[ShotgunHammer]=> Update"); }
-    [HarmonyPatch(typeof(ShotgunHammer), "LateUpdate")] public class TranspileShotgunHammer2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[ShotgunHammer]=> LateUpdate"); }
-    [HarmonyPatch(typeof(Shotgun), "Update")] public class TranspileShotgun0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Shotgun]=> Update"); }
-    [HarmonyPatch(typeof(Shotgun), "UpdateMeter")] public class TranspileShotgun1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Shotgun]=> UpdateMeter"); }
-    [HarmonyPatch(typeof(Nailgun), "Update")] public class TranspileNailgun0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> Update"); }
-    [HarmonyPatch(typeof(Nailgun), "UpdateZapHud")] public class TranspileNailgun1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> UpdateZpHud"); }
-    [HarmonyPatch(typeof(Nailgun), "FixedUpdate")] public class TranspileNailgun2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> FixedUpdate"); }
-    [HarmonyPatch(typeof(Nailgun), "RefreshHeatSinkFill")] public class TranspileNailgun3 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> RefreshHeatSinkFill"); }
-    [HarmonyPatch(typeof(RocketLauncher), "Update")] public class TranspileRocketLauncher0{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[RocketLauncher]=> Update");}
-    [HarmonyPatch(typeof(RocketLauncher), "FixedUpdate")] public class TranspileRocketLauncher1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[RocketLauncher]=> FixedUpdate");}
-    [HarmonyPatch(typeof(NewMovement), "Update")] public class TranspileNewMovement0{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Update");}
-    [HarmonyPatch(typeof(NewMovement), "FixedUpdate")] public class TranspileNewMovement1{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> FixedUpdate");}
-    [HarmonyPatch(typeof(NewMovement), "Move")] public class TranspileNewMovement2{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Move");}
-    [HarmonyPatch(typeof(NewMovement), "Jump")] public class TranspileNewMovement3{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Jump");}
-    [HarmonyPatch(typeof(NewMovement), "Dodge")] public class TranspileNewMovement4{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Dodge");}
-    [HarmonyPatch(typeof(NewMovement), "TrySSJ")] public class TranspileNewMovement5{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> TrySSJ");}
-    [HarmonyPatch(typeof(NewMovement), "WallJump")] public class TranspileNewMovement6{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> WallJump");}
-    [HarmonyPatch(typeof(NewMovement), "CheckForGasoline")] public class TranspileNewMovement7{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> CheckForGasoline");}
-    [HarmonyPatch(typeof(NewMovement), "FrictionlessSlideParticle")] public class TranspileNewMovement8{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> FrictionlessSlideParticle");}
-    [HarmonyPatch(typeof(NewMovement), "DetachSlideScrape")] public class TranspileNewMovement9{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> DetachSlideScrape");}
-    [HarmonyPatch(typeof(FistControl), "Update")] public class TranspileFistControl{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[FistControl]=> Update");}
-    [HarmonyPatch(typeof(GroundCheck), "Update")] public class TranspileGroundCheck0{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> Update");}
-    [HarmonyPatch(typeof(GroundCheck), "FixedUpdate")] public class TranspileGroundCheck1{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> FixedUpdate");}
-    [HarmonyPatch(typeof(GroundCheck), MethodType.Constructor)] public class TranspileGroundCheck2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "Constructor<GroundCheck>"); }
-    [HarmonyPatch(typeof(ClimbStep), "FixedUpdate")] public class TranspileClimbStep{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[ClimbStep]=> FixedUpdate");}
-    [HarmonyPatch(typeof(CameraController), "Update")] public class TranspileCameraController{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[CameraController]=> Update");}
-    [HarmonyPatch(typeof(Punch), "Update")] public class TranspilePunch{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[Punch]=> Update");}
-    [HarmonyPatch(typeof(WalkingBob), "Update")] public class TranspileWalkingBob{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[WalkingBob]=> Update");}
-    [HarmonyPatch(typeof(StaminaMeter), "Update")] public class TranspileStaminaMeter{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[StaminaMeter]=> Update");}
-    [HarmonyPatch(typeof(HealthBar), "Update")] public class TranspileHealthBar{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) =>DeltaTimeReplacer.Transpiler(instructions, "[HealthBar]=> Update");}
-    [HarmonyPatch(typeof(HurtZone), "FixedUpdate")] public class TranspileHurtZone{ [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HurtZone]=> FixedUpdate");}
-    [HarmonyPatch(typeof(SpriteController), "Awake")]
-    class Patch
-    {
-        static void Postfix(SpriteController __instance)
-        {
-            //UnityEngine.Debug.Log("Unity, all awake is modified bro!");
-            if (__instance.gameObject.layer != 0)
-                __instance.gameObject.layer = 0;
-            foreach(Transform child in __instance.GetComponentsInChildren<Transform>())
-                child.gameObject.layer = 0;
-        }
-    }
-
-    //====================[ PATCHWORK END ]======================\\
 
 
     // ############################################# PLAYER SCRIPTS ########################################## \\
@@ -1478,14 +1811,17 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 GameObject armWindow = col.transform.Find("Canvas/Background/Main Panel/Weapons/Arm Window").gameObject;
                 GameObject armPanelGold = armWindow.transform.Find("Variation Screen/Variations/Arm Panel (Gold)").gameObject;
                 armPanelGold.GetComponent<ShopButton>().failure = false;
-                if (Timestopper.TimeStop) {
+                if (Timestopper.TimeStop)
+                {
                     col.gameObject.GetComponent<ShopZone>().enabled = false;
-                } else {
+                }
+                else
+                {
                     col.gameObject.GetComponent<ShopZone>().enabled = true;
                     Timestopper.LatestTerminal = col.gameObject;
                 }
             }
-        }   
+        }
     }
 
     public class GoldArmItem : MonoBehaviour
@@ -1578,15 +1914,14 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
         }
     }
-    public class ConstraintSaver : MonoBehaviour    // Added to all Rigidbodies when time stops
+    public class RigidbodyStopper : MonoBehaviour    // Added to all Rigidbodies when time stops
     {
-        public bool gravity = false;
-        public bool frozen = false;
-        public bool byDio = false;
-        public bool isCoin = false;
-        public bool isRocket = false;
-        public bool previousrocketfreeze = false;
-        private float localScale = 1.0f; // local timescale, so that coins freeze slowly
+        public float localScale = 1.0f; // local timescale, so that coins and stuff freeze slowly
+        bool gravity = false;
+        bool frozen = false;
+        bool byDio = false;
+        bool isCoin = false;
+        bool isRocket = false;
         public Vector3 unscaledVelocity = new Vector3(0, 0, 0);
         public Vector3 unscaledAngularVelocity = new Vector3(0, 0, 0);
         public Rigidbody R;
@@ -1594,11 +1929,14 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
 
         public void Freeze()
         {
+            if (GetComponent<Landmine>() != null)
+                transform.Find("Trigger").gameObject.SetActive(false);
+            if (GetComponent<Chainsaw>() != null)
+                if (GetComponent<FixedUpdateCaller>() == null)
+                    gameObject.AddComponent<FixedUpdateCaller>();
             if (gameObject.GetComponent<Grenade>() != null)
             {
                 isRocket = gameObject.GetComponent<Grenade>().rocket;
-                //gameObject.AddComponent<FixedUpdateCaller>();
-                //GetComponent<FixedUpdateCaller>().enabled = false;
             }
             R = gameObject.GetComponent<Rigidbody>();
             if (gameObject.GetComponent<Coin>() != null)
@@ -1617,6 +1955,11 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     frozen = true;
                 }
             }
+            else
+            {
+                this.enabled = false;
+                return;
+            }
             if (GetComponent<Nail>() != null)
             {
                 if (GetComponent<Nail>().sawblade || GetComponent<Nail>().chainsaw)
@@ -1633,6 +1976,10 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
 
         private void UnFreeze()
         {
+            if (GetComponent<Landmine>() != null)
+                transform.Find("Trigger").gameObject.SetActive(true);
+            if (GetComponent<Chainsaw>() != null)
+                R.isKinematic = false;
             if (R != null)
             {
                 if (!R.isKinematic)
@@ -1671,6 +2018,16 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
 
         public void FakeFixedUpdate()
         {
+            if (GetComponent<EnemyIdentifier>() != null)
+            {
+                if (GetComponent<EnemyIdentifier>().hooked && ((List<EnemyType>)AccessTools.Field(typeof(HookArm), "lightEnemies").GetValue(MonoSingleton<HookArm>.Instance)).Contains(GetComponent<EnemyIdentifier>().enemyType))
+                {
+                    R.isKinematic = false;
+                    localScale = 1;
+                    unscaledVelocity = R.velocity;
+                    return;
+                }
+            }
             if (isCoin)
             {
                 gameObject.GetComponent<SphereCollider>().enabled = true;
@@ -1680,58 +2037,58 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
             if (Timestopper.TimeStop && R != null)
             {
-                //if (!frozen)
-                //{
-                //    Freeze();
-                //}
-                if (R != null)
+                if (GetComponent<Chainsaw>() != null && localScale == 0)
+                    R.isKinematic = true;
+                if (R.isKinematic || !gameObject.activeInHierarchy)
                 {
-                    if (!R.isKinematic)
+                    return;
+                }
+                if (isRocket)
+                {
+                    R.isKinematic = !GetComponent<Grenade>().frozen;
+                    GetComponent<Grenade>().rideable = true;
+                    MethodInfo MFixedUpdate = GetComponent<Grenade>().GetType().GetMethod("FixedUpdate",
+                                        BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                    if (MFixedUpdate != null)
+                        MFixedUpdate.Invoke(GetComponent<Grenade>(), null);
+                    R.isKinematic = false;
+                }
+                if (!R.isKinematic)
+                {
+                    R.useGravity = false;
+                    unscaledVelocity += R.GetAccumulatedForce(Time.fixedDeltaTime) * Time.fixedDeltaTime;
+                    R.AddForce(-R.GetAccumulatedForce(Time.fixedDeltaTime));
+                    if (gravity)
+                        unscaledVelocity += R.velocity - (unscaledVelocity - Physics.gravity * Time.fixedDeltaTime) * localScale;
+                    else
+                        unscaledVelocity += R.velocity - (unscaledVelocity) * localScale;
+                    unscaledAngularVelocity += R.angularVelocity - unscaledAngularVelocity * localScale;
+                    R.velocity = unscaledVelocity * localScale;
+                    R.angularVelocity = unscaledAngularVelocity * localScale;
+                    if (!isRocket || !(MonoSingleton<WeaponCharges>.Instance && MonoSingleton<WeaponCharges>.Instance.rocketFrozen))
                     {
-                        R.useGravity = false;
-                        unscaledVelocity += R.GetAccumulatedForce(Time.fixedDeltaTime);
-                        R.AddForce(-R.GetAccumulatedForce(Time.fixedDeltaTime));
-                        if (gravity)
-                            unscaledVelocity += R.velocity - (unscaledVelocity - Physics.gravity * Time.fixedDeltaTime) * localScale;
+                        if (byDio)
+                            localScale -= Timestopper.playerDeltaTime / Timestopper.affectSpeed.value;
                         else
-                            unscaledVelocity += R.velocity - (unscaledVelocity) * localScale;
-                        unscaledAngularVelocity += R.angularVelocity - unscaledAngularVelocity * localScale;
-                        R.velocity = unscaledVelocity * localScale;
-                        R.angularVelocity = unscaledAngularVelocity * localScale;
-                        if (!isRocket || !(MonoSingleton<WeaponCharges>.Instance && MonoSingleton<WeaponCharges>.Instance.rocketFrozen))
-                        {
-                            if (previousrocketfreeze)
-                            {
-                                previousrocketfreeze = false;
-                                MethodInfo MFixedUpdate = gameObject.GetComponent<Grenade>().GetType().GetMethod("FixedUpdate",
-                                BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                                MFixedUpdate.Invoke(gameObject.GetComponent<Grenade>(), null);
-                                transform.Find("FreezeEffect").gameObject.SetActive(false);
-                            }
-                            if (byDio)
-                                localScale -= Timestopper.playerDeltaTime / Timestopper.affectSpeed.Value;
-                            else
-                                localScale -= Timestopper.playerDeltaTime / Timestopper.stopSpeed.Value;
-                            if (localScale < 0)
-                                localScale = 0.0f;
-                        } else
-                        {
-                            MonoSingleton<WeaponCharges>.Instance.rocketFrozen = false;
-                            MethodInfo MFixedUpdate = gameObject.GetComponent<Grenade>().GetType().GetMethod("FixedUpdate",
-                                BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                            MFixedUpdate.Invoke(gameObject.GetComponent<Grenade>(), null);
-                            transform.Find("FreezeEffect").gameObject.SetActive(true);
-                            MonoSingleton<WeaponCharges>.Instance.rocketFrozen = true;
-                            previousrocketfreeze = true;
-                            if (localScale < 1)
-                                localScale += Timestopper.playerDeltaTime / Timestopper.stopSpeed.Value;
-                            if (localScale > 1)
-                                localScale = 1.0f;
-                        }
+                            localScale -= Timestopper.playerDeltaTime / Timestopper.stopSpeed.value;
+                        if (localScale < 0)
+                            localScale = 0.0f;
+                    }
+                    else
+                    {
+                        MonoSingleton<WeaponCharges>.Instance.rocketFrozen = false;
+                        GetComponent<Grenade>().rideable = true;
+                        MethodInfo MFixedUpdate = gameObject.GetComponent<Grenade>().GetType().GetMethod("FixedUpdate",
+                            BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                        MFixedUpdate.Invoke(gameObject.GetComponent<Grenade>(), null);
+                        transform.Find("FreezeEffect").gameObject.SetActive(true);
+                        MonoSingleton<WeaponCharges>.Instance.rocketFrozen = true;
+                        if (localScale < 1)
+                            localScale += Timestopper.playerDeltaTime / Timestopper.stopSpeed.value;
+                        if (localScale > 1)
+                            localScale = 1.0f;
                     }
                 }
-                else
-                    R = gameObject.GetComponent<Rigidbody>();
             }
             else if (frozen && R != null)
             {
@@ -1756,12 +2113,12 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     time -= Time.fixedDeltaTime;
                     if (gameObject.GetComponent<Nailgun>() != null)
                     {
-                        foreach(ScaleNFade C in gameObject.GetComponentsInChildren<ScaleNFade>())
+                        foreach (ScaleNFade C in gameObject.GetComponentsInChildren<ScaleNFade>())
                         {
                             Destroy(C.gameObject);
                         }
                     }
-                    foreach(Component C in gameObject.GetComponents(typeof(MonoBehaviour)))
+                    foreach (UnityEngine.Component C in gameObject.GetComponents(typeof(MonoBehaviour)))
                     {
                         MethodInfo MFixedUpdate = C.GetType().GetMethod("FixedUpdate",
                                         BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
@@ -1777,18 +2134,44 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     }
     public class Playerstopper : MonoBehaviour   // The other side of the magic
     {
+        public static Playerstopper Instance;
+        public GameObject GoldArm;
+        public AudioSource audio;
         public float UnscaledDebug = 0.0f;
-        public GroundCheck G1;
-        public GroundCheck G2;
-        public NewMovement movement;
         public float JumpCooldown = 0.0f;
-        public bool movementHack = true;
         public GameObject TheCube;
-        public bool menuOpen = false;
         public bool frameLaterer = false;
         public PrivateInsideTimer NotJumpingTimer = new PrivateInsideTimer();
         public PrivateInsideTimer JumpReadyTimer = new PrivateInsideTimer();
+        NewMovement movement;
 
+        public IEnumerator LoadGoldArm()
+        {
+            yield return Timestopper.armGoldObj;
+            yield return transform.Find("Main Camera/Punch");
+            GameObject GoldArm = Instantiate(Timestopper.armGoldObj, transform.Find("Main Camera/Punch"));
+            Timestopper.mls.LogInfo("Loaded gold arm: " + GoldArm);
+            GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material = new Material(Timestopper.FindShader("ULTRAKILL/Master"));
+            GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material.mainTexture = Timestopper.armGoldColor;
+            GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material.EnableKeyword("VERTEX_LIGHTING");
+            GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material.EnableKeyword("_FOG_ON");
+            GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().updateWhenOffscreen = true;
+            GoldArm.name = "Arm Gold";
+            GoldArm.layer = 13;
+            foreach (Transform t in GoldArm.transform)
+                t.gameObject.layer = 13;
+            GoldArm.AddComponent<Animator>();
+            GoldArm.GetComponent<Animator>().runtimeAnimatorController = Timestopper.armGoldAC;
+            //GoldArm.transform.localEulerAngles = new Vector3(0f, 235f, 20f);
+            GoldArm.transform.localEulerAngles = new Vector3(0f, 250f, 12f);
+            GoldArm.transform.localScale = new Vector3(10, 10, 10);
+            GoldArm.transform.localPosition = new Vector3(-0.6029f, -1.04f, -1.2945f);
+            GoldArm.AddComponent<WalkingBob>();
+            GoldArm.transform.GetChild(1).gameObject.SetActive(false);
+            //GoldArm.SetActive((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm));
+            Timestopper.mls.LogInfo("Golden Arm created successfully.");
+            yield break;
+        }
         public void FixedUpdateFix(Transform target)
         {
             if (target.GetComponent(typeof(MonoBehaviour)) != null)
@@ -1808,9 +2191,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         public void Awake()
         {
-            G1 = gameObject.GetComponentsInChildren<GroundCheck>()[0];
-            G2 = gameObject.GetComponentsInChildren<GroundCheck>()[1];
+            Instance = this;
             FixedUpdateFix(transform);
+            StartCoroutine(LoadGoldArm());
             if (GameObject.Find("GameController").GetComponent<FixedUpdateCaller>() == null)
             {
                 GameObject.Find("GameController").gameObject.AddComponent<FixedUpdateCaller>();
@@ -1834,72 +2217,39 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
             return null;
         }
-        //public void EndParry()
-        //{
-        //    Timestopper.mls.LogWarning("Parry Timer Ended! walking: " + GetComponent<NewMovement>().walking);
-        //    Timestopper.playerTimeScale = 1;
-        //    GetComponent<NewMovement>().walking = false;
-        //    //Timestopper.StopTime(0);
-        //    Timestopper.MenuCanvas.transform.Find("ParryFlash").gameObject.SetActive(false);
-        //    foreach (Transform child in Timestopper.Player.transform.Find("Main Camera/New Game Object").transform)
-        //        Destroy(child.gameObject);
-        //}
-        private void HandleHitstop()
+
+        public void PlayRespectiveSound(bool istimestopped)
         {
-            if ((float)AccessTools.Field(typeof(TimeController), "currentStop").GetValue(MonoSingleton<TimeController>.Instance) <= 0) {
-                if (Timestopper.playerTimeScale <= 0)
-                {
-                    Timestopper.playerTimeScale = 1;
-                    //GetComponent<NewMovement>().walking = false;
-                    MonoSingleton<TimeController>.Instance.timeScaleModifier = 1;
-                    (AccessTools.Field(typeof(TimeController), "parryFlash").GetValue(MonoSingleton<TimeController>.Instance) as GameObject).SetActive(false);
-                    foreach (Transform child in Timestopper.Player.transform.Find("Main Camera/New Game Object").transform)
-                        Destroy(child.gameObject);
-                }
-                return;
-            }
-            else
+            if (audio == null)
             {
-                frameLaterer = true;
-                Timestopper.playerTimeScale = 0;
-                Time.timeScale = 0;
-                //GetComponent<NewMovement>().walking = false;
+                audio = transform.Find("Main Camera").gameObject.AddComponent<AudioSource>();
+                audio.clip = Timestopper.StoppedTimeAmbiences[(int)Timestopper.stoppedSound.value];
             }
+            if (istimestopped != Timestopper.TimeStop)
+                if (istimestopped)
+                {
+                    if (Timestopper.TimestopSounds[(int)Timestopper.stopSound.value] != null)
+                        audio.PlayOneShot(Timestopper.TimestopSounds[(int)Timestopper.stopSound.value]);
+                    if (Timestopper.StoppedTimeAmbiences[(int)Timestopper.stoppedSound.value] != null)
+                    {
+                        audio.clip = Timestopper.StoppedTimeAmbiences[(int)Timestopper.stoppedSound.value];
+                        audio.Play();
+                        audio.loop = true;
+                    }
+                }
+                else
+                {
+                    audio.Stop();
+                    if (Timestopper.TimestartSounds[(int)Timestopper.startSound.value] != null)
+                        audio.PlayOneShot(Timestopper.TimestartSounds[(int)Timestopper.startSound.value]);
+                }
         }
 
-        private void HandleMenuPause()
-        {
-            if (Timestopper.MenuCanvas == null) {
-                Timestopper.MenuCanvas = FindRootGameObject("Canvas");
-                return;                                 }
-            if (menuOpen != (Timestopper.MenuCanvas.transform.Find("PauseMenu").gameObject.activeSelf || Timestopper.MenuCanvas.transform.Find("OptionsMenu").gameObject.activeSelf) )
-            {
-                menuOpen = (Timestopper.MenuCanvas.transform.Find("PauseMenu").gameObject.activeSelf || Timestopper.MenuCanvas.transform.Find("OptionsMenu").gameObject.activeSelf);
-                if (menuOpen == true)
-                {
-                    Timestopper.playerTimeScale = 0;
-                } else
-                {
-                    Timestopper.playerTimeScale = 1;
-                }
-            }
-        }
-        public void FixedUpdate()
-        {
-            if (Timestopper.TimeStop)
-            {
-                Time.timeScale = Timestopper.realTimeScale;
-                if (Timestopper.playerDeltaTime > 0)
-                    Physics.Simulate(Time.fixedDeltaTime*(1-Timestopper.realTimeScale));   // Manually simulate Rigidbody physics
-            }
-        }
-        
         private void Update()
         {
             JumpReadyTimer.Update();
             NotJumpingTimer.Update();
-            HandleHitstop();
-            if (Timestopper.specialMode.Value)
+            if (Timestopper.specialMode.value)
             {
                 if (UnityInput.Current.GetKeyDown(KeyCode.J))
                 {
@@ -1907,30 +2257,55 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     Timestopper.mls.LogInfo("MONEY MONEY MONEY");
                 }
             }
+            //GoldArm.transform.localEulerAngles = new Vector3(0f, 235f, 20f);
+            if (GoldArm == null) GoldArm = transform.Find("Main Camera/Punch/Arm Gold").gameObject;
+            Vector3 newRot = new Vector3(0f, 250f - (32 * MonoSingleton<FistControl>.Instance.fistCooldown), 12f + (16 * MonoSingleton<FistControl>.Instance.fistCooldown));
+            GoldArm.transform.localEulerAngles = (newRot*Timestopper.playerDeltaTime*20 + GoldArm.transform.localEulerAngles) / (1 + Timestopper.playerDeltaTime*20);
+            // trigger function
+            if (((UnityInput.Current.GetKeyDown(Timestopper.stopKey.value)) && (bool)TimestopperProgress.ArmStatus(TProgress.equippedArm))
+                || (Timestopper.TimeStop && Timestopper.TimeLeft <= 0.0f)
+                || (movement.dead && Timestopper.TimeStop))
+            {
+                if (MonoSingleton<OptionsManager>.Instance.paused) //if game paused
+                    return;
+                if (!Timestopper.TimeStop && !MonoSingleton<FistControl>.Instance.shopping && Timestopper.TimeLeft > Timestopper.lowerTreshold.value)
+                {
+                    PlayRespectiveSound(true);
+                    Timestopper.StopTime(Timestopper.stopSpeed.value);
+                    GoldArm.transform.GetChild(1).gameObject.SetActive(true);
+                    GoldArm.GetComponent<Animator>().Play("Stop");
+                    FixedUpdateFix(transform);
+                    Timestopper.mls.LogInfo("Time stops!");
+                }
+                else
+                {
+                    PlayRespectiveSound(false);
+                    Timestopper.StartTime(Timestopper.startSpeed.value);
+                    GoldArm.transform.GetChild(1).gameObject.SetActive(true);
+                    GoldArm.GetComponent<Animator>().Play("Release");
+                    Timestopper.BlindCheat.Disable();
+                    Timestopper.mls.LogInfo("Time resumes.");
+                }
+            }
+            if (movement.dead)
+            {
+                GoldArm.GetComponent<Animator>().Play("Pickup");
+                GoldArm.SetActive(false);
+            }
             if (Timestopper.TimeStop)
             {
-                HandleMenuPause();
-                if (Timestopper.realTimeScale < Timestopper.blindScale.Value && !ULTRAKILL.Cheats.BlindEnemies.Blind)
+                if (Timestopper.realTimeScale < Timestopper.blindScale.value && !ULTRAKILL.Cheats.BlindEnemies.Blind)
                 {
                     Timestopper.BlindCheat.Enable(GameObject.Find("Cheat Menu").GetComponent<CheatsManager>());
                 }
-                if (transform.Find("Main Camera").GetComponent<AudioSource>() != null) // for timestop sound effect to play
+                if (audio != null) // for timestop sound effect to be able to play
                 {
-                    transform.Find("Main Camera").GetComponent<AudioSource>().pitch = 1;
+                    audio.pitch = 1;
                     transform.Find("Main Camera").GetComponent<AudioSource>().volume = 1;
                 }
-                if (!Timestopper.healInTimestop.Value)
+                if (Timestopper.timestopHardDamage.value)
                 {
-                    movement.ForceAddAntiHP(Timestopper.antiHpMultiplier.Value*Time.unscaledDeltaTime*(1-Timestopper.realTimeScale), true, true, true, false);
-                }
-
-                foreach (Rigidbody R in FindObjectsOfType<Rigidbody>())  // Freeze anything that has recently been created
-                {
-                    if (R.gameObject.GetComponent<ConstraintSaver>() == null && R.gameObject.GetComponent<NewMovement>() == null)
-                    {
-                        R.gameObject.AddComponent<ConstraintSaver>();
-                        R.gameObject.GetComponent<ConstraintSaver>().Freeze();
-                    }
+                    movement.ForceAddAntiHP(Timestopper.antiHpMultiplier.value * Time.unscaledDeltaTime * (1 - Timestopper.realTimeScale), true, true, true, false);
                 }
                 // The JumpBug fix \\
                 if (movement.jumping && movement.falling && !movement.boost)
@@ -1938,14 +2313,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     JumpReadyTimer.SetTimer(0.2f, false);
                     NotJumpingTimer.SetTimer(0.25f, false);
                 }
-                //if (JumpCooldown > Time.unscaledDeltaTime)  {
-                //    movement.StartCoroutine("JumpReady");
-                //    JumpCooldown -= Time.unscaledDeltaTime;}
-                //else  {
-                //    JumpCooldown = 0.0f;
-                //    movement.StartCoroutine("JumpReady");
-                //    movement.jumping = false;   }
-            } else // if time not stop
+            }
+            else // if time is not stopped
             {
                 if (ULTRAKILL.Cheats.BlindEnemies.Blind)
                 {
@@ -1955,7 +2324,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
 
 
-        private void LateUpdate()
+        private void LateUpdate() // make animations work
         {
             if (Timestopper.TimeStop)
             {
@@ -1964,7 +2333,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     foreach (Animator A in FindObjectsOfType<Animator>())   // Make animations work in stopped time when time is stopped
                         if (A.gameObject.transform.IsChildOf(gameObject.transform) && A.updateMode == AnimatorUpdateMode.Normal)
                             A.updateMode = AnimatorUpdateMode.UnscaledTime;
-                } else
+                }
+                else
                 {
                     foreach (Animator A in FindObjectsOfType<Animator>())   // Make animations work in stopped time when time is stopped
                         if (A.gameObject.transform.IsChildOf(gameObject.transform) && A.updateMode == AnimatorUpdateMode.UnscaledTime)
@@ -1983,197 +2353,154 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     }
 
 
-    // useless experiments that may come in handy
-    public class StaticMeshDuplicate : MonoBehaviour
+
+    // ################################################  PATCHWORK  ######################################################## \\
+    /*                                DeltaTimeReplacer replaces the following code:                                         *\
+     *                                Time.deltaTime -> Timestopper.playerDeltaTime                                          *
+    \*                                Time.fixedDeltaTime -> Time.unscaledFixedDeltaTime                                     */
+    public class DeltaTimeReplacer
     {
-        public GameObject Run()
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, string name = "CODE")
         {
-            return StaticMeshDuplicator.Duplicate(gameObject);
-        }
+            var deltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
+            var fixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
+            var playerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
+            //var unscaledGetter = AccessTools.PropertyGetter(typeof(Time), nameof(Time.unscaledDeltaTime));
+            //var fixedUnscaledDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedUnscaledDeltaTime));
+            var playerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
+            ManualLogSource mls = BepInEx.Logging.Logger.CreateLogSource(Timestopper.Name);
 
-        public void SetAllUV(int channel, Vector2 uv)
-        {
-            switch (channel) { 
-                case 0:
-                    GetComponent<MeshFilter>().mesh.uv = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv, uv);
-                    break;
-                case 1:
-                    GetComponent<MeshFilter>().mesh.uv2 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv2, uv);
-                    break;
-                case 2:
-                    GetComponent<MeshFilter>().mesh.uv3 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv3, uv);
-                    break;
-                case 3:
-                    GetComponent<MeshFilter>().mesh.uv4 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv4, uv);
-                    break;
-                case 4:
-                    GetComponent<MeshFilter>().mesh.uv5 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv5, uv);
-                    break;
-                case 5:
-                    GetComponent<MeshFilter>().mesh.uv6 = StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv6, uv);
-                    break;
-                default: break;
-            
-            
-            }
-        }
-
-        public void AddAllUV(int channel, Vector2 uv)
-        {
-            switch (channel)
+            mls.LogWarning($"Transpiling " + name + "...");
+            foreach (var i in instructions)
             {
-                case 0:
-                    GetComponent<MeshFilter>().mesh.uv.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv, uv), (x, y) => x + y);
-                    break;
-                case 1:
-                    GetComponent<MeshFilter>().mesh.uv2.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv2, uv), (x, y) => x + y);
-                    break;
-                case 2:
-                    GetComponent<MeshFilter>().mesh.uv3.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv3, uv), (x, y) => x + y);
-                    break;
-                case 3:
-                    GetComponent<MeshFilter>().mesh.uv4.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv4, uv), (x, y) => x + y);
-                    break;
-                case 4:
-                    GetComponent<MeshFilter>().mesh.uv5.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv5, uv), (x, y) => x + y);
-                    break;
-                case 5:
-                    GetComponent<MeshFilter>().mesh.uv6.Zip(StaticMeshDuplicator.Populate(GetComponent<MeshFilter>().mesh.uv6, uv), (x, y) => x + y);
-                    break;
-                default: break;
-
-
+                if (i.Calls(deltaTimeG))
+                {
+                    var newInst = new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
+                    //mls.LogInfo($"modified deltaTime");
+                }
+                else if (i.Calls(fixedDeltaTimeG))
+                {
+                    var newInst = new CodeInstruction(OpCodes.Call, playerFixedDeltaTimeG);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
+                    //mls.LogInfo($"modified fixedDeltaTime");
+                }
+                else
+                {
+                    yield return i;
+                }
             }
+        }
+
+    }
+
+    [HarmonyPatch(typeof(NewMovement), "Parry")]
+    public class ParryTimeFiller
+    {
+        [HarmonyPrefix]
+        static bool Prefix()
+        {
+            if (!Timestopper.TimeStop)
+                Timestopper.TimeLeft += Timestopper.bonusTimeForParry.value;
+            return true;
         }
     }
 
-    public static class StaticMeshDuplicator
+    [HarmonyPatch(typeof(TimeSince), "op_Implicit", new Type[] { typeof(TimeSince) })]
+    public class TimeSinceReplacer1
     {
-        public static GameObject Duplicate(GameObject target)
+        [HarmonyPrefix]
+        static bool Prefix(ref float __result, TimeSince ts)
         {
-            GameObject G = UnityEngine.Object.Instantiate(target);
-            G.name = "Duplicate from Static";
-            var extractedMesh = ExtractSubMesh(target.GetComponent<MeshFilter>().sharedMesh, target.GetComponent<MeshRenderer>().subMeshStartIndex);
-            Material newMaterial = new Material(target.GetComponent<MeshRenderer>().material.shader);
-            //newMaterial.CopyPropertiesFromMaterial(target.GetComponent<MeshRenderer>().material);
-            newMaterial.mainTexture = target.GetComponent<MeshRenderer>().material.mainTexture;
-            G.GetComponent<MeshFilter>().mesh = extractedMesh;
-            Timestopper.mls.LogInfo("loaded shader: " + target.GetComponent<MeshRenderer>().material.shader.name);
-            G.GetComponent<MeshRenderer>().material = newMaterial;
-            G.transform.position = new Vector3(0, 2, 0);
-            //for (int i= 0; i < G.GetComponent<MeshFilter>().mesh.uv.Length; i++)
-            //{
-            //    G.GetComponent<MeshFilter>().mesh.uv[i].x /= G.GetComponent<MeshRenderer>().material.GetTexture(0).width;
-            //    G.GetComponent<MeshFilter>().mesh.uv[i].y /= G.GetComponent<MeshRenderer>().material.GetTexture(0).height; 
-            //}
-            return G;
-        }
-
-        public static T[] ExtractFromArray<T>(T[] array, int start, int length) {
-            T[] result = new T[length];
-            Array.Copy(array, start, result, 0, length);
-            return result;
-        }
-
-        public static T[] Populate<T>(T[] array, object value)
-        {
-            T[] t = new T[array.Length];
-            for (int i = 0; i < array.Length; i++)
+            if (Timestopper.UnscaleTimeSince)
             {
-                t[i] = (T)value;
+                __result = Time.unscaledTime - (float)AccessTools.Field(typeof(TimeSince), "time").GetValue(ts);
+                return false;
             }
-            return t;
-        }
-
-        public static Mesh ExtractSubMesh(Mesh originalMesh, int subMeshIndex)
-        {
-            // Create a readable copy using GPU readback
-            Mesh readableMesh = CreateReadableMeshCopy(originalMesh);
-
-            // Extract the submesh
-            SubMeshDescriptor descriptor = readableMesh.GetSubMesh(subMeshIndex);
-
-            Mesh newMesh = new Mesh();
-            newMesh.vertices = ExtractFromArray(readableMesh.vertices, descriptor.firstVertex, descriptor.vertexCount);
-
-            var triangles = ExtractFromArray(readableMesh.triangles, descriptor.indexStart, descriptor.indexCount);
-            // Remap triangle indices to the new vertex array
-            for (int i = 0; i < triangles.Length; i++)
-                triangles[i] -= descriptor.firstVertex;
-            newMesh.triangles = triangles;
-
-            // Copy other attributes if available
-            if (readableMesh.normals != null && readableMesh.normals.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.normals = ExtractFromArray(readableMesh.normals, descriptor.firstVertex, descriptor.vertexCount);
-            else
-                newMesh.RecalculateNormals();
-
-            if (readableMesh.uv != null && readableMesh.uv.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.uv = ExtractFromArray(readableMesh.uv, descriptor.firstVertex, descriptor.vertexCount);
-            if (readableMesh.uv2 != null && readableMesh.uv2.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.uv2 = ExtractFromArray(readableMesh.uv2, descriptor.firstVertex, descriptor.vertexCount);
-            if (readableMesh.uv3 != null && readableMesh.uv3.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.uv3 = ExtractFromArray(readableMesh.uv3, descriptor.firstVertex, descriptor.vertexCount);
-            if (readableMesh.uv4 != null && readableMesh.uv4.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.uv4 = ExtractFromArray(readableMesh.uv4, descriptor.firstVertex, descriptor.vertexCount);
-            if (readableMesh.uv5 != null && readableMesh.uv5.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.uv5 = ExtractFromArray(readableMesh.uv5, descriptor.firstVertex, descriptor.vertexCount);
-            if (readableMesh.uv6 != null && readableMesh.uv6.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.uv6 = ExtractFromArray(readableMesh.uv6, descriptor.firstVertex, descriptor.vertexCount);
-            if (readableMesh.uv7 != null && readableMesh.uv7.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.uv7 = ExtractFromArray(readableMesh.uv7, descriptor.firstVertex, descriptor.vertexCount);
-            if (readableMesh.uv8 != null && readableMesh.uv8.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.uv8 = ExtractFromArray(readableMesh.uv8, descriptor.firstVertex, descriptor.vertexCount);
-
-
-            if (readableMesh.tangents != null && readableMesh.tangents.Length > descriptor.firstVertex + descriptor.vertexCount - 1)
-                newMesh.tangents = ExtractFromArray(readableMesh.tangents, descriptor.firstVertex, descriptor.vertexCount);
-
-
-
-            newMesh.RecalculateBounds();
-            newMesh.name = $"Generated_From_SubMesh_{subMeshIndex}";
-
-            return newMesh;
-
-        }
-
-        private static Mesh CreateReadableMeshCopy(Mesh originalMesh)
-        {
-            // Method 1: Try using Graphics.CopyTexture equivalent for meshes
-            try
-            {
-                // Create a temporary render texture approach
-                var tempGO = new GameObject("TempMeshReader");
-                var mf = tempGO.AddComponent<MeshFilter>();
-                var mr = tempGO.AddComponent<MeshRenderer>();
-
-                mf.sharedMesh = originalMesh;
-                mr.material = new Material(Shader.Find("Standard"));
-
-                // Force Unity to make the mesh readable by accessing it through the renderer
-                var bounds = mr.bounds; // This forces some internal processing
-
-                // Create new mesh and copy what we can
-                Mesh newMesh = new Mesh();
-                newMesh.name = originalMesh.name + "_Readable";
-
-                // Use the SkinnedMeshRenderer approach to extract data
-                var tempSkinned = tempGO.AddComponent<SkinnedMeshRenderer>();
-                tempSkinned.sharedMesh = originalMesh;
-
-                // Bake the mesh to get readable data
-                var bakedMesh = new Mesh();
-                tempSkinned.BakeMesh(bakedMesh);
-
-                UnityEngine.Object.DestroyImmediate(tempGO);
-                return bakedMesh;
-            }
-            catch
-            {
-                // Fallback: try to create a basic copy
-                return originalMesh;
-            }
+            return true;
         }
     }
+    [HarmonyPatch(typeof(TimeSince), "op_Implicit", new Type[] { typeof(float) })]
+    public class TimeSinceReplacer2
+    {
+        [HarmonyPrefix]
+        static bool Prefix(ref TimeSince __result, float ts)
+        {
+            if (Timestopper.UnscaleTimeSince)
+            {
+                object result = new TimeSince();
+                AccessTools.Field(typeof(TimeSince), "time").SetValue(result, Time.unscaledTime - ts);
+                __result = (TimeSince)result;
+                return false;
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(WeaponCharges), "Update")] public class TranspileWeaponCharges0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Update"); }
+    [HarmonyPatch(typeof(WeaponCharges), "Charge")] public class TranspileWeaponCharges1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[WeaponCharges]=> Charge"); }
+    [HarmonyPatch(typeof(GunControl), "Update")] public class TranspileGunControl { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[GunControl]=> Update"); }
+    [HarmonyPatch(typeof(Revolver), "Update")] public class TranspileRevolver0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Revolver]=> Update"); }
+    [HarmonyPatch(typeof(Revolver), "LateUpdate")] public class TranspileRevolver1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Revolver]=> LateUpdate"); }
+    [HarmonyPatch(typeof(ShotgunHammer), "UpdateMeter")] public class TranspileShotgunHammer0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[ShotgunHammer]=> UpdateMeter"); }
+    [HarmonyPatch(typeof(ShotgunHammer), "Update")] public class TranspileShotgunHammer1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[ShotgunHammer]=> Update"); }
+    [HarmonyPatch(typeof(ShotgunHammer), "LateUpdate")] public class TranspileShotgunHammer2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[ShotgunHammer]=> LateUpdate"); }
+    [HarmonyPatch(typeof(Shotgun), "Update")] public class TranspileShotgun0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Shotgun]=> Update"); }
+    [HarmonyPatch(typeof(Shotgun), "UpdateMeter")] public class TranspileShotgun1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Shotgun]=> UpdateMeter"); }
+    [HarmonyPatch(typeof(Nailgun), "Update")] public class TranspileNailgun0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> Update"); }
+    [HarmonyPatch(typeof(Nailgun), "UpdateZapHud")] public class TranspileNailgun1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> UpdateZpHud"); }
+    [HarmonyPatch(typeof(Nailgun), "FixedUpdate")] public class TranspileNailgun2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> FixedUpdate"); }
+    [HarmonyPatch(typeof(Nailgun), "RefreshHeatSinkFill")] public class TranspileNailgun3 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Nailgun]=> RefreshHeatSinkFill"); }
+    [HarmonyPatch(typeof(RocketLauncher), "Update")] public class TranspileRocketLauncher0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[RocketLauncher]=> Update"); }
+    [HarmonyPatch(typeof(RocketLauncher), "FixedUpdate")] public class TranspileRocketLauncher1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[RocketLauncher]=> FixedUpdate"); }
+    [HarmonyPatch(typeof(NewMovement), "Update")] public class TranspileNewMovement0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Update"); }
+    [HarmonyPatch(typeof(NewMovement), "FixedUpdate")] public class TranspileNewMovement1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> FixedUpdate"); }
+    [HarmonyPatch(typeof(NewMovement), "Move")] public class TranspileNewMovement2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Move"); }
+    [HarmonyPatch(typeof(NewMovement), "Jump")] public class TranspileNewMovement3 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Jump"); }
+    [HarmonyPatch(typeof(NewMovement), "Dodge")] public class TranspileNewMovement4 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> Dodge"); }
+    [HarmonyPatch(typeof(NewMovement), "TrySSJ")] public class TranspileNewMovement5 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> TrySSJ"); }
+    [HarmonyPatch(typeof(NewMovement), "WallJump")] public class TranspileNewMovement6 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> WallJump"); }
+    [HarmonyPatch(typeof(NewMovement), "CheckForGasoline")] public class TranspileNewMovement7 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> CheckForGasoline"); }
+    [HarmonyPatch(typeof(NewMovement), "FrictionlessSlideParticle")] public class TranspileNewMovement8 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> FrictionlessSlideParticle"); }
+    [HarmonyPatch(typeof(NewMovement), "DetachSlideScrape")] public class TranspileNewMovement9 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[NewMovement]=> DetachSlideScrape"); }
+    [HarmonyPatch(typeof(FistControl), "Update")] public class TranspileFistControl { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[FistControl]=> Update"); }
+    [HarmonyPatch(typeof(GroundCheck), "Update")] public class TranspileGroundCheck0 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> Update"); }
+    [HarmonyPatch(typeof(GroundCheck), "FixedUpdate")] public class TranspileGroundCheck1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> FixedUpdate"); }
+    [HarmonyPatch(typeof(GroundCheck), MethodType.Constructor)] public class TranspileGroundCheck2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "Constructor<GroundCheck>"); }
+    [HarmonyPatch(typeof(ClimbStep), "FixedUpdate")] public class TranspileClimbStep { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[ClimbStep]=> FixedUpdate"); }
+    [HarmonyPatch(typeof(CameraController), "Update")] public class TranspileCameraController { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[CameraController]=> Update"); }
+    [HarmonyPatch(typeof(Punch), "Update")] public class TranspilePunch { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Punch]=> Update"); }
+    [HarmonyPatch(typeof(WalkingBob), "Update")] public class TranspileWalkingBob { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[WalkingBob]=> Update"); }
+    [HarmonyPatch(typeof(StaminaMeter), "Update")] public class TranspileStaminaMeter { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[StaminaMeter]=> Update"); }
+    [HarmonyPatch(typeof(HealthBar), "Update")] public class TranspileHealthBar { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HealthBar]=> Update"); }
+    [HarmonyPatch(typeof(HurtZone), "FixedUpdate")] public class TranspileHurtZone { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HurtZone]=> FixedUpdate"); }
+    [HarmonyPatch(typeof(Grenade), "LateUpdate")] public class TranspileGrenade { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Grenade]=> LateUpdate"); }
+    [HarmonyPatch(typeof(Chainsaw), "Update")] public class TranspileChainsaw { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Chainsaw]=> Update"); }
+    [HarmonyPatch(typeof(HookArm), "Update")] public class TranspileHookArm { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HookArm]=> Update"); }
+    [HarmonyPatch(typeof(HookArm), "FixedUpdate")] public class TranspileHookArm1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HookArm]=> FixedUpdate()"); }
+    [HarmonyPatch(typeof(HookArm), "SemiBlockCheck")] public class TranspileHookArm2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HookArm]=> SemiBlockCheck()"); }
+    [HarmonyPatch(typeof(SpriteController), "Awake")]
+    class Patch
+    {
+        static void Postfix(SpriteController __instance)
+        {
+            //UnityEngine.Debug.Log("Unity, all awake is modified bro!");
+            if (__instance.gameObject.layer != 0)
+                __instance.gameObject.layer = 0;
+            foreach (Transform child in __instance.GetComponentsInChildren<Transform>())
+                child.gameObject.layer = 0;
+        }
+    }
+
+    //====================[ PATCHWORK END ]======================\\
+
+
+    
+
+
+
 }

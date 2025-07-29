@@ -97,10 +97,11 @@ C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Debug\MonoMod.
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\bin\Debug\MonoMod.RuntimeDetour.xml
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Debug\The Timestopper.csproj.AssemblyReference.cache
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Debug\The Timestopper.csproj.CoreCompileInputs.cache
-C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Debug\The Timestopper.csproj.CopyComplete
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Debug\The Timestopper.dll
 C:\Users\AADUMAN\source\repos\The_Timestopper\The Timestopper\obj\Debug\The Timestopper.pdb
 C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Galvinsmods-The Timestopper\The Timestopper.dll
 C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Galvinsmods-The Timestopper\The Timestopper.pdb
 C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Unknown-The_Timestopper\The Timestopper.dll
 C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\Unknown-The_Timestopper\The Timestopper.pdb
+C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\GalvinVoltag-The_Timestopper\The Timestopper.dll
+C:\Users\AADUMAN\AppData\Roaming\r2modmanPlus-local\ULTRAKILL\profiles\Hakitas Nightmare\BepInEx\plugins\GalvinVoltag-The_Timestopper\The Timestopper.pdb
