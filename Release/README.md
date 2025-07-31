@@ -45,7 +45,15 @@ However, any worries for it might corrupt your save files are unnecessary, you c
 - -No special mode yet
 - -No "ZA WARUDO" voiceline yet
 
-## ¿What to do if the mod doesn't work / if you find a bug?
+### ï¿½How to work with controllers?
+Unfortunately, ULTRAKILL's controller inputs are smoothed, which means they stop when time stops too. But there is a soltion, altough it be somewhat tideous.
+
+1. Right click ULTRAKILL in your steam library and select `Properties`
+2. From there go to the `Controller` tab, and enable `Override for ULTRAKILL`.
+3. Click `Controller Configurator` (clickable text in the same tab)
+4. Select your controller and set right joystic as mouse movement, and bind any key you want to the keyboard key that uses the Timestopper.
+
+## ï¿½What to do if the mod doesn't work / if you find a bug?
 Go to the mod's github page [here](https://github.com/GalvinVoltag/The-Timestopper), and create an issue. I'd appreciate if you'd copy-paste the full log (text from the terminal that opens with the game) inside triple quotes (\``` like this ```), it helps me diagnose the problem more efficiently and correctly. *Also you might wanna follow the issue, I might just build a fix release so that you don't need to wait until the next update.*
 
 
