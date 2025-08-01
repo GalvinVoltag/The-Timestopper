@@ -1247,13 +1247,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 newaltar.transform.position = new Vector3(-10.0146f, -24.9875f, 590.0158f);
                 newaltar.transform.localEulerAngles = new Vector3(0, 0, 0);
                 GameObject insttext = new GameObject();
-                GameObject newtext = Instantiate(insttext, newdoor.transform);
-                newtext.name = "Text";
-                newtext.AddComponent<TextMeshPro>();
-                newtext.GetComponent<TextMeshPro>().text = "<color=#FF6600>UNDER\nCONSTRUCTION</color>\n<size=42%><color=#1818FF>(use the altar instead)</color></size>";
-                newtext.GetComponent<TextMeshPro>().fontSize = 12;
-                newtext.GetComponent<TextMeshPro>().alignment = TextAlignmentOptions.Center;
-                newtext.transform.localPosition = new Vector3(0, 7.5f, -0.3f);
                 TheCube = Instantiate(GameObject.CreatePrimitive(PrimitiveType.Cube));
                 TheCube.name = "Gold Arm Item";
                 TheCube.AddComponent<Rigidbody>();

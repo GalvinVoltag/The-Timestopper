@@ -5,6 +5,7 @@
 
   #### Very small
   - Fixed a bug where The Timestopper would disappear when died.
+  - Removed the Under Construction text from the Gold Door in 7 - 1
 
 </details>
 
