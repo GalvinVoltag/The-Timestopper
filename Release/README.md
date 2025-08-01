@@ -62,15 +62,14 @@ Go to the mod's github page [here](https://github.com/GalvinVoltag/The-Timestopp
   
    ### to first get the gold arm, find this frickin' door in 7-1, and carry the blue skull to it:
 
-  ![image](https://github.com/user-attachments/assets/ef4f57b3-d8e1-4428-886d-2b1fc1da7c17)
-
+<img width="645" height="691" alt="image" src="https://github.com/user-attachments/assets/853368b8-4288-48b1-b7e8-f74815431b18" />
   
   #### The timestop ability will start with 3 seconds by default, you can upgrade your arm through this button
 ![image](https://github.com/user-attachments/assets/11be4c3f-bed5-4e1f-ba0c-4611bbe30c12)
 
 
 #### and then this menu over here:
-![image](https://github.com/user-attachments/assets/db0f0ee2-3562-449f-bebb-7840e6e571d6)
+<img width="637" height="509" alt="image" src="https://github.com/user-attachments/assets/0272a2a5-bf4f-411e-9c95-2a88b7a97437" />
 
 
 Each upgrade increases the time by around one second, changes by the upgrade count though. There can be a maximum of 10 upgrades.
