@@ -2,12 +2,11 @@
 A mod to bring your jojo fantasies into ULTRAKILL!
 -------
 ### You can do shit like this:
-![image](https://github.com/user-attachments/assets/912e29b0-0aaa-4d5c-9c75-2fb54d20edb7)
-
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5b9815ae-71b1-4097-a979-cec437a16064" />
 
 or like this:
-![image](https://github.com/user-attachments/assets/36ec4e68-94fc-4c1c-8a82-60b53ae3a94c)
-(Yes, the grayscale effect is also included, and customizable)
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0f867686-e448-4c43-a29b-eda7fc8af9e9" />
+(Yes, the grayscale effect is also included (not yet for Linux), and customizable)
 
 
 
@@ -36,7 +35,6 @@ However, any worries for it might corrupt your save files are unnecessary, you c
 + Make certain bosses able to move in stopped time, optional, maybe
 + More balancing work, overclocking mechanism (just maybe), more visual customization, etc.
 + Add sound to arm pickup animation too
-+ Add the warning a sound
 + Add more easter eggs
 
 ### Downsides / Current Bugs:
