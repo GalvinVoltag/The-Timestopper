@@ -4,8 +4,10 @@
   <summary>1.0.1 - very small bugfix</summary>
 
   #### Very small
-  - Fixed a bug where The Timestopper would disappear when died.
+  - Fixed a bug where The Timestopper would disappear when died
   - Removed the Under Construction text from the Gold Door in 7 - 1
+  - Updated the arm description, so the mechanics are more clear
+  - Updated the graphics in the README.md file
 
 </details>
 

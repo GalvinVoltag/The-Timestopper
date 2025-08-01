@@ -548,9 +548,9 @@ namespace The_Timestopper
         public static ManualLogSource mls = BepInEx.Logging.Logger.CreateLogSource(Name);
         public const string ARM_DESCRIPTION = @"A Godfist that <color=#FFFF43>stops</color> time.
 
-<color=#FF4343>Punch</color> to stop time, and <color=#FF4343>punch again</color> to start it.
+Recharges very slow, but <color=#FF4343>parrying</color> helps it recharge faster.
 
-Takes time to recharge, can be upgraded through the terminals.
+Can be <color=#FFFF24>upgraded</color> through terminals.
 ";
         public const string ARM_NEW_MESSAGE = "Somewhere in the depths of <color=#FF0000>Violence /// First</color>, a new <color=#FFFF23>golden</color> door appears";
         public const string TIMESTOP_STYLE = "<color=#FFCF21>TIME STOP</color>";
