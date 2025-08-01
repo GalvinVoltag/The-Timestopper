@@ -1,8 +1,19 @@
 # CHANGELOG:
 
+<details>
+  <summary>1.0.1 - very small bugfix</summary>
+
+  #### Very small
+  - Fixed a bug where The Timestopper would disappear when died.
+
+</details>
+
+---
 
 <details>
-  <summary> 1.0.0 </summary>
+  <summary> 1.0.0 FULL RELEASE </summary>
+
+  #### >Grayscale Shaders are not supported in Linux Machines yet!
 
   ### FULL RELEASE!
   - Performance improvements

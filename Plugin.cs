@@ -2290,7 +2290,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             if (movement.dead)
             {
                 GoldArm.GetComponent<Animator>().Play("Pickup");
-                GoldArm.SetActive(false);
+                GoldArm.transform.GetChild(1).gameObject.SetActive(false);
             }
             if (Timestopper.TimeStop)
             {
