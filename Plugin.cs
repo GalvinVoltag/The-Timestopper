@@ -383,6 +383,8 @@ namespace The_Timestopper
         public bool firstWarning = false;
         public int upgradeCount = 0;
         public float maxTime = 3.0f;
+        public float version = 0.9f;
+        public const float latestVersion = 1.0f;
 
         public static new string ToString()
         {
@@ -392,7 +394,8 @@ namespace The_Timestopper
             - equipped: {progress.equippedArm}
             - firstwarning: {progress.firstWarning}
             - upgrades: {progress.upgradeCount}
-            - max time: {progress.maxTime} ";
+            - max time: {progress.maxTime}
+            - version: {progress.version}";
         }
         public int upgradeCost
         {
@@ -499,6 +502,15 @@ namespace The_Timestopper
                 {
                     string jsonData = File.ReadAllText(filePath);
                     inst = JsonUtility.FromJson<TimestopperProgress>(jsonData);
+                    if (inst == null)
+                        inst = new TimestopperProgress();
+                    if (inst.version < latestVersion)
+                    {
+                        if (inst.version == 0.9f)
+                        {
+                            inst.version = 1.0f;
+                        }
+                    }
                 }
                 else
                 {
@@ -539,7 +551,7 @@ namespace The_Timestopper
     {
         public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "1.0.0";
+        public const string Version = "1.0.2";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -735,8 +747,8 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 maxUpgrades = new IntField(config.rootPanel, "Maximum Number of Upgrades", "maxupgrades", 10);
                 refillMultiplier = new FloatField(config.rootPanel, "Passive Income Multiplier", "refillmultiplier", 0.1f);
                 bonusTimeForParry = new FloatField(config.rootPanel, "Time Juice Refill Per Parry", "bonustimeperparry", 1.0f);
-                specialMode = new BoolField(config.rootPanel, "Special Mode", "specialmode", false);
-                specialMode.interactable = false;
+                specialMode = new BoolField(config.rootPanel, "Special Mode", "specialmode", false) {
+                    interactable = false };
 
                 PluginConfig.API.Decorators.ConfigSpace space4 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 4);
                 PluginConfig.API.Decorators.ConfigHeader colors = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- COLORS --");
@@ -765,8 +777,8 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
             if (c.gameObject.GetComponent<Grayscaler>() == null)
                 c.gameObject.AddComponent<Grayscaler>();
             c.gameObject.GetComponent<Grayscaler>().DoIt();
-            HUDRender = new RenderTexture(Screen.width, Screen.height, 0);
-            HUDRender.depth = 0;
+            HUDRender = new RenderTexture(Screen.width, Screen.height, 0) {
+                depth = 0 };
             HUDRender.Create();
             Player = GameObject.Find("Player");
             if (Player != null)
@@ -1254,8 +1266,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 TheCube.GetComponent<MeshRenderer>().enabled = false;
                 TheCube.transform.position = newaltar.transform.position + new Vector3(0, 2, 0);
                 GameObject itemArm = Instantiate(armGoldObj, TheCube.transform);
-                itemArm.GetComponentInChildren<SkinnedMeshRenderer>().material = new Material(FindShader("ULTRAKILL/Master"));
-                itemArm.GetComponentInChildren<SkinnedMeshRenderer>().material.mainTexture = armGoldColor;
+                itemArm.GetComponentInChildren<SkinnedMeshRenderer>().material = new Material(FindShader("ULTRAKILL/Master")) {
+                    mainTexture = armGoldColor };
                 itemArm.GetComponentInChildren<SkinnedMeshRenderer>().updateWhenOffscreen = true;
                 itemArm.transform.GetChild(1).GetComponentInChildren<SkinnedMeshRenderer>().rayTracingMode = UnityEngine.Experimental.Rendering.RayTracingMode.DynamicGeometry;
                 itemArm.transform.localScale = Vector3.one * 5;
@@ -1455,15 +1467,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     = (G * 5 + TimeColor) * (Time.unscaledDeltaTime) / (6 * Time.unscaledDeltaTime);
                 TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount
                     = (F * 8 + (TimeLeft / (float)TimestopperProgress.ArmStatus(TProgress.maxTime))) * (Time.unscaledDeltaTime) / (9 * Time.unscaledDeltaTime);
-                if ((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm) && Player.transform.Find("Main Camera/HUD Camera/HUD/GunCanvas/GunPanel/Filler").gameObject.activeInHierarchy)
-                {
-                    TimeHUD[0].SetActive(true);
-                }
-                else
-                {
-                    TimeHUD[0].SetActive(false);
-                    TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount = 0;
-                }
                 if ((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm))
                 {
                     if (TimeHUD[1].transform.Find("Text (TMP)").gameObject.activeInHierarchy)
@@ -1477,9 +1480,27 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                         TimeHUD[2].SetActive(true);
                         TimeHUD[2].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, 4);
                     }
-                }
-                else
-                {
+                    else
+                    {
+                        TimeHUD[0].SetActive(Time.timeSinceLevelLoad > 2.3f);
+                        if (HudController.Instance.weaponIcon.activeSelf)
+                        {
+                            TimeHUD[0].transform.localPosition = new Vector3(0f, 124.5f, 0f);
+                            HudController.Instance.speedometer.gameObject.transform.localPosition = new Vector3(-520, 64 + 342, 45f);
+                        }
+                        else
+                        {
+                            TimeHUD[0].transform.localPosition = new Vector3(0f, 24f, 0f);
+                            HudController.Instance.speedometer.gameObject.transform.localPosition = new Vector3(-520, 64 - 58, 45f);
+                        }
+                    }
+                } else {
+                    if (HudController.Instance.weaponIcon.activeSelf)
+                        HudController.Instance.speedometer.gameObject.transform.localPosition = new Vector3(-520, 342, 45f);
+                    else
+                        HudController.Instance.speedometer.gameObject.transform.localPosition = new Vector3(-520, -58, 45f);
+                    TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount = 0;
+                    TimeHUD[0].SetActive(false);
                     TimeHUD[1].SetActive(false);
                     TimeHUD[2].SetActive(false);
                 }
@@ -1686,8 +1707,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     {
         void OnEnable()
         {
-            if (transform.parent.GetComponent<TerminalExcluder>() != null)
-                transform.parent.GetComponent<TerminalExcluder>().OverrideInfoMenu();
+            transform.parent.GetComponent<TerminalExcluder>()?.OverrideInfoMenu();
         }
     }
 
@@ -2042,8 +2062,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     GetComponent<Grenade>().rideable = true;
                     MethodInfo MFixedUpdate = GetComponent<Grenade>().GetType().GetMethod("FixedUpdate",
                                         BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                    if (MFixedUpdate != null)
-                        MFixedUpdate.Invoke(GetComponent<Grenade>(), null);
+                    MFixedUpdate?.Invoke(GetComponent<Grenade>(), null);
                     R.isKinematic = false;
                 }
                 if (!R.isKinematic)
@@ -2115,8 +2134,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     {
                         MethodInfo MFixedUpdate = C.GetType().GetMethod("FixedUpdate",
                                         BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                        if (MFixedUpdate != null)
-                            MFixedUpdate.Invoke(C, null);
+                        MFixedUpdate?.Invoke(C, null);
                     }
 
                 }
@@ -2144,8 +2162,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             yield return transform.Find("Main Camera/Punch");
             GameObject GoldArm = Instantiate(Timestopper.armGoldObj, transform.Find("Main Camera/Punch"));
             Timestopper.mls.LogInfo("Loaded gold arm: " + GoldArm);
-            GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material = new Material(Timestopper.FindShader("ULTRAKILL/Master"));
-            GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material.mainTexture = Timestopper.armGoldColor;
+            GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material = new Material(Timestopper.FindShader("ULTRAKILL/Master")) {
+                mainTexture = Timestopper.armGoldColor };
             GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material.EnableKeyword("VERTEX_LIGHTING");
             GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material.EnableKeyword("_FOG_ON");
             GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().updateWhenOffscreen = true;

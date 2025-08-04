@@ -1,6 +1,17 @@
 # CHANGELOG:
 
 <details>
+  <summary>1.0.1 - another bugfix and hud improvement</summary>
+
+  #### Small
+  - HUD for time juice should now act as intended when any changes occur in the HUD
+  - More null preventers were added to the save system for timestopper.state
+
+</details>
+
+---
+
+<details>
   <summary>1.0.1 - very small bugfix</summary>
 
   #### Very small
