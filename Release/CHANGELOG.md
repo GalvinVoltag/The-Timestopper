@@ -1,7 +1,42 @@
 # CHANGELOG:
 
+
 <details>
-  <summary>1.0.1 - another bugfix and hud improvement</summary>
+  <summary>1.0.5 | config change </summary>
+
+  #### Very Small
+  - Grayscale amount can now be set to any number
+
+</details>
+
+---
+
+<details>
+  <summary>1.0.4 | text disappear fix + new message + music </summary>
+
+  #### Small
+  - The arm now displays a messsage of which button to use it when you pick it up
+  - Menu texts no longer disappear because of the mod in some custom maps
+  - Music detection is now more accurate and should work in all levels
+  - Fixed a bug where the pickup animation wouldn't play
+
+</details>
+
+---
+
+<details>
+  <summary>1.0.3 | bugfix + sandbox arm</summary>
+
+  #### Small
+  - Bugfixes related to configgy menus
+  - The Sandbox Arm now works in stopped time
+
+</details>
+
+---
+
+<details>
+  <summary>1.0.2 | another bugfix and hud improvement</summary>
 
   #### Small
   - HUD for time juice should now act as intended when any changes occur in the HUD
@@ -12,7 +47,7 @@
 ---
 
 <details>
-  <summary>1.0.1 - very small bugfix</summary>
+  <summary>1.0.1 | very small bugfix</summary>
 
   #### Very small
   - Fixed a bug where The Timestopper would disappear when died

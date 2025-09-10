@@ -163,6 +163,7 @@
   <ItemGroup>
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Unused.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="timestopper_assets_all.bundle" />

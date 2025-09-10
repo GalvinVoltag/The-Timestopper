@@ -6,370 +6,18 @@ using HarmonyLib;
 using UnityEngine;
 using System.Reflection.Emit;
 using System.Collections;
-//using Configgy;
-//using Configgable.Assets;
 using UnityEngine.SceneManagement;
 using TMPro;
 using SettingsMenu.Models;
 using SettingsMenu.Components;
 using System.Runtime.InteropServices;
-//using TimelessConfig;
 using BepInEx;
 using BepInEx.Logging;
-using BepInEx.Configuration;
 using BepInEx.Bootstrap;
 using PluginConfig.API;
 using PluginConfig.API.Fields;
-using UnityEngine.InputSystem.XR.Haptics;
-
-//namespace TimelessConfig //work in progress custom config library: Timeless Config
-//{
-//    public enum SettingType
-//    {
-//        Auto,
-//        Check,
-//        Value,
-//        Slider,
-//        Dropdown,
-//    };
-
-//    public class Config<T>
-//    {
-//        public static List<object> All = new List<object>();
-
-//        public const int NO_OP = -1;
-//        public const int FAILURE = 0;
-//        public const int SUCCESS = 1;
-//        bool modified = false;  // if the value is modified, needed for when default values are updated
-//        bool locked = false;    // if the setting can be changed from the settings menu
-//        string _path;           // path of the setting in the menu
-//        string _name;           // name of the setting in the menu, \n means locked by default
-//        string _tooltip;        // tip of the setting in the menu
-//        Type _type = typeof(T); // type of the config
-//        T _value;               // current value
-//        T _default;             // default value
-//        SettingType settingType;// type of the setting used in the menu
-//        string[] _list;         // list of available options for if the setting is a dropdown, 0 and 1 are used for min and max slider values if its a slider
-//        bool[] _listLocks;      // list of which elements are locked if the setting is a dropdown
-//        public event Action<string, object> OnModification;
-//        public Config(T defaultvalue, string name = "setting", string path = "", string tooltip = "", SettingType typeOfSetting = SettingType.Auto, string[] list = null, bool islocked = false)
-//        {
-//            _value = defaultvalue;
-//            _default = defaultvalue;
-//            _path = path;
-//            _name = name.Substring((name[0] == '\n') ? 1 : 0);
-//            _tooltip = tooltip;
-//            locked = islocked || (name[0] == '\n');
-//            _type = typeof(T);
-//            All.Add(this);
-//            settingType = typeOfSetting;
-//            if (list == null)
-//                return;
-//            _list = new string[list.Length];
-//            _listLocks = new bool[list.Length];
-//            for (int i = 0; i < list.Length; i++)
-//            {
-//                _list[i] = list[i].Substring((list[i][0] == '\n') ? 1 : 0);
-//                _listLocks[i] = (list[i][0] == '\n');
-//            }
-//        }
-
-//        public string GetNameTitle()
-//        {
-//            string slash = "";
-//            if (Path != "")
-//                slash = "/";
-//            return $@"[{Path}{slash}{Name}]";
-//        }
-//        public string Serialize()
-//        {
-//            string liststring = "";
-//            string lockstring = "";
-//            string slash = "";
-//            if (Path != "")
-//                slash = "/";
-//            if (_list != null)
-//            {
-//                for (int i = 0; i < _list.Length; i++)
-//                {
-//                    liststring += _list[i] + ", ";
-//                    lockstring += (_listLocks[i] ? "true" : "false") + ", ";
-//                }
-//            }
-//            if (_list == null)
-//                return $@"
-//[{Path}{slash}{Name}]
-//type = {type.Name}
-//value = {Value.ToString()}
-//default = {Default.ToString()}
-//locked = {locked}
-//modified = {modified}
-//tip = {"\""}{Tooltip}{"\""}
-//settingType = {SettingType}
-//";
-//            else
-//                return $@"
-//[{Path}{slash}{Name}]
-//type = {type.Name}
-//value = {Value.ToString()}
-//default = {Default.ToString()}
-//locked = {locked}
-//modified = {modified}
-//tip = {"\""}{Tooltip}{"\""}
-//droplist = [{liststring}]
-//settingType = {SettingType}
-//droplocks = [{lockstring}]
-//";
-//        }
-
-//        public void Digest(string serialized)
-//        {
-//            string[] lines = serialized.Split('\n');
-//            Dictionary<string, string> cache = new Dictionary<string, string>();
-//            foreach(string s in lines)
-//            {
-//                if (s.Length >= 1)
-//                    cache.Add(s.Split('=')[0].Substring(0, s.Split('=')[0].Length - 1), s.Substring(s.Split('=')[0].Length + 1));
-//            }
-//            System.ComponentModel.TypeConverter converter;
-//            foreach(string s in cache.Keys)
-//            {
-//                switch(s)
-//                {
-//                    case "value":
-//                        converter = TypeDescriptor.GetConverter(typeof(T));
-//                        _value = (T)converter.ConvertFromString(cache["value"]);
-//                        break;
-//                    case "modified":
-//                        converter = TypeDescriptor.GetConverter(typeof(bool));
-//                        modified = (bool)converter.ConvertFromString(cache["modified"]);
-//                        break;
-//                    case "locked":
-//                        converter = TypeDescriptor.GetConverter(typeof(bool));
-//                        locked = (bool)converter.ConvertFromString(cache["locked"]);
-//                        break;
-//                    case "droplist":
-//                        {
-//                            string execution = cache["droplist"].Split('[')[1].Split(']')[0];
-//                            _list = execution.Split(new char[]{','}, StringSplitOptions.RemoveEmptyEntries);
-//                            break;
-//                        }
-//                    case "droplocks":
-//                        {
-//                            string[] execution = cache["droplocks"].Split('[')[1].Split(']')[0].Split(',');
-//                            converter = TypeDescriptor.GetConverter(typeof(bool));
-//                            List<bool> bools = new List<bool>();
-//                            foreach (string ent in execution)
-//                                if (ent != "")
-//                                    bools.Add((bool)converter.ConvertFromString(ent));
-//                            _listLocks = bools.ToArray();
-//                            break;
-//                        }
-//                    case "settingType":
-//                        converter = TypeDescriptor.GetConverter(typeof(SettingType));
-//                        settingType = (SettingType)converter.ConvertFromString(cache["settingType"]);
-//                        break;
-//                    default:
-//                        break;
-//                }
-//                if (!modified) Restore();
-//            }
-//        }
-//        public void Restore() {     // return to default value
-//            Value = _default;
-//        }
-//        public void Lock() { if (locked == false) OnModification?.Invoke(GetNameTitle(), this);  locked = true; }
-//        public void Unlock() { if (locked == true) OnModification?.Invoke(GetNameTitle(), this); locked = false; }
-//        public void LockDropdownElement(int id)
-//        {
-//            if (!_listLocks[id]) OnModification?.Invoke(GetNameTitle(), this);
-//            _listLocks[id] = true;
-//        }
-//        public void LockDropdownElement(string elementName) // not including the \n
-//        {   int i = 0;
-//            foreach(string s in _list)
-//            {
-//                if (s == elementName)
-//                {
-//                    if (!_listLocks[i]) OnModification?.Invoke(GetNameTitle(),this);
-//                    _listLocks[i] = true;
-//                }
-//                i++;
-//            }
-//        }
-//        public void UnlockDropdownElement(int id)
-//        {
-//            if (_listLocks[id]) OnModification?.Invoke(GetNameTitle(), this);
-//            _listLocks[id] = false;
-//        }
-//        public void UnlockDropdownElement(string elementName) // not including the \n
-//        {   int i = 0;
-//            foreach (string s in _list)
-//            {
-//                if (s == "\n" + elementName)
-//                    if (_listLocks[i]) OnModification?.Invoke(GetNameTitle(), this);
-//                    _listLocks[i] = false;
-//                i++;
-//            }
-//        }
-//        public string GetDropdownElement(int id)
-//        {
-//            return _list[id];
-//        }
-//        public int GetDropdownElementID(string elementName) // returns -1 in failure, -2 if list is null
-//        {
-//            if (_list == null) return -2;
-//            for (int i = 0; i < _list.Length; i++)
-//            {
-//                if (_list[i] == elementName)
-//                    return i;
-//            }
-//            return -1;
-//        }
-//        public int Modify(T newvalue) // use Value if you don't need feedback
-//        {
-//            if (_value.Equals(newvalue))
-//                return NO_OP;
-//            Value = newvalue;
-//            if (!_value.Equals(newvalue))
-//                return FAILURE;
-//            OnModification.Invoke(GetNameTitle(), this);
-//            return SUCCESS;
-//        }
-//        public T Value { get { return _value; } set { if (!_value.Equals(value)) OnModification?.Invoke(GetNameTitle(), this); modified = !_value.Equals(_default); _value = value; } }
-//        public T Default { get { return _default; } }
-//        public Type type { get { return _type; } }
-//        public bool Modified { get { return modified; } }
-//        public bool Locked { get { return locked; } }
-//        public SettingType SettingType { get { return settingType; } }
-//        public string Name { get { return _name.Substring((_name[0] == '\n') ? 1 : 0); } }
-//        public string Path { get { return _path; } }
-//        public string Tooltip { get { return _tooltip; } }
-//        public string[] ListElements { get { return _list; } }
-
-//        public static implicit operator T(Config<T> entry) { return entry.value; }
-//        //public static implicit operator Config<T>(T value) { return new Config<T>(value); }
-//    }
-
-//    public class ConfigManager
-//    {
-//        Assembly builder;
-//        string[] allEntries;
-//        string[] metadata;
-//        const string version = "1.0.0";
-//        public ConfigManager(string ModGUID, string ModName, ManualLogSource mls, string customPath = "") // relative to default config path
-//        {
-//            mls.LogWarning("TIMELESS CONFIIIIIGGGHHH !!!!!!!!!!!!!!!!!!!!!!!!!!");
-//            builder = Assembly.GetCallingAssembly();
-//            GUID = (string.IsNullOrEmpty(ModGUID) ? builder.GetName().Name : ModGUID);
-//            Name = (string.IsNullOrEmpty(ModName) ? GUID : ModName);
-//            metadata = new string[3] {
-//                "## Generated by Timeless Config - v" + version,
-//                "## Config file created for the mod " + Name,
-//                "## GUID " + GUID
-//            };
-//        }
-//        void LoadFromFile()
-//        {
-//            string path = Path.Combine(Paths.ConfigPath, GUID + ".tcfg");
-//            List<string> all = new List<string>();
-//            if (!File.Exists(path))
-//                return;
-//            string[] lines = File.ReadAllLines(path);
-//            string entry = "";
-//            foreach (string line in lines)
-//            {
-//                if (line.StartsWith("["))
-//                {
-//                    if (entry != "")
-//                        all.Add(entry);
-//                    entry = line;
-//                    continue;
-//                }
-//                if (entry == "")
-//                    continue;
-//                else
-//                    entry += line + "\n";
-//            }
-//            all.Add(entry);
-//            allEntries = all.ToArray();
-//        }
-//        public string GetEntry(string titleCard)
-//        {
-//            foreach(string s in allEntries)
-//            {
-//                if (s.StartsWith(titleCard))
-//                    return s;
-//            }
-//            return null;
-//        }
-//        public int GetEntryID(string titleCard)
-//        {
-//            int i = 0;
-//            foreach (string s in allEntries)
-//            {
-//                if (s.StartsWith(titleCard))
-//                    return i;
-//                i++;
-//            }
-//            return 0;
-//        }
-//        public void SaveChangedValue(string titleCard, object instance)
-//        {
-
-//            int id = GetEntryID(titleCard);
-//            allEntries[id] = instance.GetType().GetMethod("Serialize").Invoke(instance, null) as string;
-//            string path = Path.Combine(Paths.ConfigPath, GUID + ".tcfg");
-//            File.WriteAllLines(path, metadata.Concat(allEntries));
-//        }
-//        public void BuildAll(ManualLogSource mls)
-//        {
-//            mls.LogError("Buildall has been called! ----------------");
-//            if ((object)builder != null)
-//                builder = Assembly.GetCallingAssembly();
-
-
-//            List<string> all = new List<string>();
-
-//            mls.LogWarning("loading file");
-//            LoadFromFile();
-
-//            Type[] types = builder.GetTypes();
-//            foreach(Type type in types)
-//            {
-//                FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-//                foreach (FieldInfo field in fields)
-//                {
-//                    if (!field.IsStatic)
-//                        continue;
-
-//                    if (field.FieldType.IsGenericType && field.FieldType.GetGenericTypeDefinition() == typeof(Config<>))
-//                    {
-//                        var cInstance = field.GetValue(null);
-//                        if (cInstance != null)
-//                        {
-//                            mls.LogInfo($"Found config: {field.DeclaringType.Name}.{field.Name}, type = {field.DeclaringType.Name}");
-//                            string titleCard = cInstance.GetType().GetMethod("GetNameTitle").Invoke(cInstance, null) as string;
-//                            string entryString = GetEntry(titleCard);
-//                            if (entryString != null)
-//                                cInstance.GetType().GetMethod("Digest").Invoke(cInstance, new object[] { entryString });
-//                            cInstance.GetType().GetEvent("OnModification").AddEventHandler(cInstance, (Action<string, object>)SaveChangedValue);
-//                            all.Add(cInstance.GetType().GetMethod("Serialize").Invoke(cInstance, null) as string);
-//                            mls.LogInfo(cInstance.GetType().GetMethod("Serialize").Invoke(cInstance, null) as string);
-//                            mls.LogInfo($"config done");
-//                        }
-//                    }
-//                }
-//            }
-//            allEntries = all.ToArray();
-//            string path = Path.Combine(Paths.ConfigPath, GUID + ".tcfg");
-//            File.WriteAllLines(path, metadata.Concat(allEntries));
-//        }
-//        string GUID;
-//        string Name;
-
-//    }
-//}
+using System.ComponentModel;
+using GameConsole.Commands;
 
 namespace The_Timestopper
 {
@@ -444,6 +92,8 @@ namespace The_Timestopper
         public static void ForceDownngradeArm()
         {
             TimestopperProgress progress = Read();
+            if (Timestopper.maxUpgrades.value < 0)
+                Timestopper.maxUpgrades.value = 1;
             while (progress.upgradeCount > Timestopper.maxUpgrades.value)
             {
                 progress.upgradeCount--;
@@ -464,6 +114,7 @@ namespace The_Timestopper
             progress.hasArm = true;
             progress.equippedArm = true;
             Timestopper.Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.SetActive(true);
+            Timestopper.Player.transform.Find("Main Camera/Punch/Arm Gold/Timestopper").gameObject.SetActive(true);
             Timestopper.Player.transform.Find("Main Camera/Punch/Arm Gold").gameObject.GetComponent<Animator>().Play("Pickup");
             Timestopper.mls.LogInfo("Received Golden Arm");
             Write(progress);
@@ -551,13 +202,14 @@ namespace The_Timestopper
     {
         public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "1.0.2";
+        public const string Version = "1.0.5";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
 
         //private ConfigBuilder config;
         public static ManualLogSource mls = BepInEx.Logging.Logger.CreateLogSource(Name);
+        public const string ARM_PICKUP_MESSAGE = "<color=#FFFF23>TIMESTOPPER</color>: Use \"<color=#FF4223>{0}</color>\" to stop and start time at will.";
         public const string ARM_DESCRIPTION = @"A Godfist that <color=#FFFF43>stops</color> time.
 
 Recharges very slow, but <color=#FF4343>parrying</color> helps it recharge faster.
@@ -603,7 +255,8 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
         public static bool LoadDone = false;
         public static bool LoadStarted = false;
         public static float realTimeScale = 1.0f;
-        public static float playerTimeScale = 1.0f;
+        [DefaultValue(1.0f)]
+        public static float playerTimeScale { get; private set; }
         public static bool fixedCall = false;
         public static bool parryWindow = false;
         public static bool firstLoad = true;
@@ -655,12 +308,13 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
         public static FloatSliderField stoppedMusicPitch;
         public static FloatSliderField stoppedMusicVolume;
         public static BoolField grayscale;
-        public static FloatSliderField grayscaleAmount;
+        public static FloatField grayscaleAmount;
         public static BoolField exclusiveGrayscale;
         public static BoolField timestopHardDamage;
         public static IntField maxUpgrades;
         public static BoolField forceDowngrade;
         public static BoolField specialMode;
+        public static BoolField extensiveLogging;
         //---------------------technical stuff--------------------\\
         public static FloatField lowerTreshold; //2.0f
         public static FloatField blindScale; //0.4f
@@ -675,20 +329,25 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
 
         private PluginConfigurator config;
 
-
-        // {{{{{{{{{{{ FOR TESTING }}}}}}}}}}}}}}}}}
-        //public static Config<float> testfloat = new Config<float>(1, "test one");
-        //public static Config<float> testfloat2 = new Config<float>(2, "test two");
-        //public static Config<bool> testbool = new Config<bool>(false, "bool option");
-        //public static ConfigManager configmanager = new ConfigManager(GUID, Name, mls);
-
-
+        public static void Log(string log, bool extensive = false, int err_lvl = 0 /*dbg-inf-war-err-ftl*/)
+        {
+            if (extensive)
+                if (!extensiveLogging.value)
+                    return;
+            if (err_lvl == 0) mls.LogDebug(log);
+            if (err_lvl == 1) mls.LogInfo(log);
+            if (err_lvl == 2) mls.LogWarning(log);
+            if (err_lvl == 3) mls.LogError(log);
+            if (err_lvl == 4) mls.LogFatal(log);
+        }
         void Awake()
         {
             if (Instance == null) { Instance = this; }
 
-            mls.LogInfo("The Timestopper has awakened!");
+            Log("The Timestopper has awakened!");
             InitializeConfig();
+
+            playerTimeScale = 1.0f;
 
             harmony.PatchAll();
 
@@ -721,14 +380,19 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 PluginConfig.API.Decorators.ConfigHeader graphic = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- GRAPHICS --");
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                    mls.LogWarning("Linux OS detected, grayscale effects are turned off by default!");
+                    Log("Linux OS detected, grayscale effects are turned off by default!", true, 3);
                     grayscale = new BoolField(config.rootPanel, "Grayscale Effect", "doGrayscale", false);
                 }  else  {
                     grayscale = new BoolField(config.rootPanel, "Grayscale Effect", "doGrayscale", true); }
-                ConfigDivision grayscaleOptions = new ConfigDivision(config.rootPanel, "grayscaleOptions");
-                grayscale.onValueChange += (BoolField.BoolValueChangeEvent e) => { grayscaleOptions.interactable = e.value; };
+                ConfigDivision grayscaleOptions = new ConfigDivision(config.rootPanel, "grayscaleOptions") {
+                    interactable = grayscale.value
+                };
+                grayscale.onValueChange += (BoolField.BoolValueChangeEvent e) => { 
+                    grayscaleOptions.interactable = e.value;
+                    if (e.value) Timestopper.Instance.StartCoroutine(InitializeShaders());
+                };
                 exclusiveGrayscale = new BoolField(grayscaleOptions, "Exclusive Grayscale", "exclusivegrayscale", true);
-                grayscaleAmount = new FloatSliderField(grayscaleOptions, "Grayscale Amount", "grayscaleamount", new Tuple<float, float>(0, 2), 1.0f);
+                grayscaleAmount = new FloatField(grayscaleOptions, "Grayscale Amount", "grayscaleamount", 1.0f);
 
                 PluginConfig.API.Decorators.ConfigSpace space2 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 4);
                 PluginConfig.API.Decorators.ConfigHeader audio = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- AUDIO --");
@@ -745,6 +409,14 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 PluginConfig.API.Decorators.ConfigHeader gameplay = new PluginConfig.API.Decorators.ConfigHeader(config.rootPanel, "-- GAMEPLAY --");
 
                 maxUpgrades = new IntField(config.rootPanel, "Maximum Number of Upgrades", "maxupgrades", 10);
+                maxUpgrades.minimumValue = 1;
+                maxUpgrades.onValueChange += (IntField.IntValueChangeEvent e) =>{
+                    if (e.value < 1)
+                    {
+                        e.value = 1;
+                        maxUpgrades.value = 1;
+                    }
+                };
                 refillMultiplier = new FloatField(config.rootPanel, "Passive Income Multiplier", "refillmultiplier", 0.1f);
                 bonusTimeForParry = new FloatField(config.rootPanel, "Time Juice Refill Per Parry", "bonustimeperparry", 1.0f);
                 specialMode = new BoolField(config.rootPanel, "Special Mode", "specialmode", false) {
@@ -763,6 +435,8 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
 
                 ConfigPanel advancedOptions = new ConfigPanel(config.rootPanel, "ADVANCED", "advancedoptions");
                 PluginConfig.API.Decorators.ConfigSpace space6 = new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 8);
+
+                extensiveLogging = new BoolField(advancedOptions, "Extensive Logging", "extensivelogging", false);
                 forceDowngrade = new BoolField(advancedOptions, "Force Downgrade Arm", "forcedowngrade", true);
                 lowerTreshold = new FloatField(advancedOptions, "Min Time Juice to Stop Time", "lowertreshold", 2.0f);
                 blindScale = new FloatField(advancedOptions, "Blinding TimeScale", "blindscale", 0.2f);
@@ -770,158 +444,125 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
 
             }
         }
-        void InitializeShaders()
-        {
-            //.....................SHADERWORK..........................\\
-            Camera c = Player.transform.Find("Main Camera/Virtual Camera").GetComponent<Camera>();
-            if (c.gameObject.GetComponent<Grayscaler>() == null)
-                c.gameObject.AddComponent<Grayscaler>();
-            c.gameObject.GetComponent<Grayscaler>().DoIt();
-            HUDRender = new RenderTexture(Screen.width, Screen.height, 0) {
-                depth = 0 };
-            HUDRender.Create();
-            Player = GameObject.Find("Player");
-            if (Player != null)
-                HUDCamera = Player.transform.Find("Main Camera/HUD Camera").GetComponent<Camera>();
-            if (HUDCamera != null)
-                HUDCamera.targetTexture = HUDRender;
-        }
+
         public IEnumerator LoadBundle()
         {
             LoadDone = false;
             LoadStarted = true;
             var assembler = Assembly.GetExecutingAssembly();
             string[] resourceNames = assembler.GetManifestResourceNames();
-            mls.LogInfo("Scanning embedded resources: " + string.Join(", ", resourceNames));
+            Log("Scanning embedded resources: " + string.Join(", ", resourceNames), true);
             using (var stream = assembler.GetManifestResourceStream("The_Timestopper.timestopper_assets_all.bundle"))
             {
                 if (bundle == null)
                     bundle = AssetBundle.LoadFromStream(stream);
                 else
-                    mls.LogInfo("Bundle is already loaded!");
+                    Log("Bundle is already loaded!", true);
                 if (bundle == null)
                 {
-                    mls.LogError("AssetBundle failed to load!");
+                    Log("AssetBundle failed to load!", true, 3);
                     yield break;
                 }
-                mls.LogInfo(">Loading bundle asyncroniously:");
+                Log(">Loading bundle asyncroniously:", true);
 
-                mls.LogInfo(">All assets in bundle:");
+                Log(">All assets in bundle:", true);
                 foreach (string assetName in bundle.GetAllAssetNames())
                 {
-                    mls.LogInfo("-->" + assetName);
+                    Log("-->" + assetName, true);
                 }
                 grayscaleShader = bundle.LoadAsset<Shader>("Assets/BundledAssets/Grayscale.shader");
-                if (grayscaleShader == null) mls.LogError("Failed to load Grayscale shader");
+                if (grayscaleShader == null || !grayscaleShader.isSupported) Log("Failed to load Grayscale shader", true, 3);
 
                 slappShader = bundle.LoadAsset<Shader>("Assets/BundledAssets/Slapp.shader");
-                if (slappShader == null) mls.LogError("Failed to load Slapp shader");
+                if (slappShader == null) Log("Failed to load Slapp shader", true, 3);
 
                 TimestopSounds[(int)SoundTypeA.Classic] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStop-Classic.mp3");
-                if (TimestopSounds[(int)SoundTypeA.Classic] == null) mls.LogError("Failed to load TimeStop-Classic");
+                if (TimestopSounds[(int)SoundTypeA.Classic] == null) Log("Failed to load TimeStop-Classic", true, 3);
 
                 TimestopSounds[(int)SoundTypeA.Alternate] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStop-Alternate.mp3");
-                if (TimestopSounds[(int)SoundTypeA.Alternate] == null) mls.LogError("Failed to load TimeStop-Alternate");
+                if (TimestopSounds[(int)SoundTypeA.Alternate] == null) Log("Failed to load TimeStop-Alternate", true, 3);
 
                 TimestopSounds[(int)SoundTypeA.Za_Warudo] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStop-ZaWarudo.mp3");
-                if (TimestopSounds[(int)SoundTypeA.Za_Warudo] == null) mls.LogError("Failed to load TimeStop-ZaWarudo");
+                if (TimestopSounds[(int)SoundTypeA.Za_Warudo] == null) Log("Failed to load TimeStop-ZaWarudo", true, 3);
 
                 StoppedTimeAmbiences[(int)SoundTypeB.Classic] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeJuice-Classic.mp3");
-                if (StoppedTimeAmbiences[(int)SoundTypeB.Classic] == null) mls.LogError("Failed to load TimeJuice-Classic");
+                if (StoppedTimeAmbiences[(int)SoundTypeB.Classic] == null) Log("Failed to load TimeJuice-Classic", true, 3);
 
                 StoppedTimeAmbiences[(int)SoundTypeB.Alternate] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeJuice-Alternate.mp3");
-                if (StoppedTimeAmbiences[(int)SoundTypeB.Alternate] == null) mls.LogError("Failed to load TimeJuice-Alternate");
+                if (StoppedTimeAmbiences[(int)SoundTypeB.Alternate] == null) Log("Failed to load TimeJuice-Alternate", true, 3);
 
                 StoppedTimeAmbiences[(int)SoundTypeB.Ambience] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeJuice-Ambience.mp3");
-                if (StoppedTimeAmbiences[(int)SoundTypeB.Ambience] == null) mls.LogError("Failed to load TimeJuice-Ambience");
+                if (StoppedTimeAmbiences[(int)SoundTypeB.Ambience] == null) Log("Failed to load TimeJuice-Ambience", true, 3);
 
                 TimestartSounds[(int)SoundTypeC.Classic] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStart-Classic.mp3");
-                if (TimestartSounds[(int)SoundTypeC.Classic] == null) mls.LogError("Failed to load TimeStart-Classic");
+                if (TimestartSounds[(int)SoundTypeC.Classic] == null) Log("Failed to load TimeStart-Classic", true, 3);
 
                 TimestartSounds[(int)SoundTypeC.Alternate] = bundle.LoadAsset<AudioClip>("Assets/BundledAssets/Audio/TimeStart-Alternate.mp3");
-                if (TimestartSounds[(int)SoundTypeC.Alternate] == null) mls.LogError("Failed to load TimeStart-Alternate");
+                if (TimestartSounds[(int)SoundTypeC.Alternate] == null) Log("Failed to load TimeStart-Alternate", true, 3);
 
                 armGoldLogo = bundle.LoadAsset<Texture2D>("Assets/BundledAssets/Timestopper.png");
-                if (armGoldLogo == null) mls.LogError("Failed to load Timestopper logo");
+                if (armGoldLogo == null) Log("Failed to load Timestopper logo", true, 3);
                 if (config != null) config.icon = Sprite.Create(armGoldLogo, new Rect(0, 0, 512, 512), new Vector2(256, 256));
 
-                //var prefab = bundle.LoadAsset<GameObject>("Assets/BundledAssets/gold arm model.fbx");
-                //if (prefab != null) armGoldObj = Instantiate(prefab, transform);
-                //else mls.LogError("Failed to load Timestopper prefab");
-
                 armGoldColor = bundle.LoadAsset<Texture2D>("Assets/BundledAssets/GoldArmColor.png");
-                if (armGoldColor == null) mls.LogError("Failed to load Gold Arm Model");
+                if (armGoldColor == null) Log("Failed to load Gold Arm Model", true, 3);
 
                 armGoldText = bundle.LoadAsset<Texture2D>("Assets/BundledAssets/TextmodeV1Arm4.png");
-                if (armGoldText == null) mls.LogError("Failed to load Gold Arm Textmode");
+                if (armGoldText == null) Log("Failed to load Gold Arm Textmode", true, 3);
 
                 armGoldObj = bundle.LoadAsset<GameObject>("Assets/BundledAssets/gold arm model.fbx");
-                if (armGoldObj == null) mls.LogError("Failed to load Gold Arm Model");
+                if (armGoldObj == null) Log("Failed to load Gold Arm Model", true, 3);
 
                 armGoldAC = bundle.LoadAsset<RuntimeAnimatorController>("Assets/BundledAssets/AC.controller");
-                if (armGoldAC == null) mls.LogError("Failed to load AC controller");
-
-                //ConfigMenuPrefab = Instantiate(bundle.LoadAsset<GameObject>("Assets/BundledAssets/Prefabs/configsmenu.prefab"), transform);
-                //if (ConfigMenuPrefab == null) mls.LogError("Failed to load Config Menu Prefab");
-
-                //newRoomColor = bundle.LoadAsset<Texture2D>("Assets/BundledAssets/Texture2D_11_1.png");
-                //if (newRoomColor == null) mls.LogError("Failed to load New Room Texture");
-
-                //newRoomObj = bundle.LoadAsset<GameObject>("Assets/BundledAssets/Timestopper Room.fbx");
-                //if (newRoomObj == null) mls.LogError("Failed to load New Room Obj");
+                if (armGoldAC == null) Log("Failed to load AC controller", true, 3);
 
                 yield return null;
 
                 //bundle.Unload(false);       //Release the bundle so it doesn't cause leakage?
                 
-                mls.LogInfo("Asset extraction status:");
+                Log("Asset extraction status:", true);
             }
-            mls.LogInfo("Bundle extraction done!");
-            if (Player == null)
-            {
-                mls.LogError("Player is null, shaders cannot apply!");
-                LoadDone = true;
-                LoadStarted = false;
-                yield break;
-            }
+            Log("      >:Bundle extraction done!", true);
 
-            if (grayscaleShader.isSupported && grayscale.value)
-                InitializeShaders();
-
-            TimeColor = Timestopper.timeJuiceColorNormal.value;
+            TimeColor = timeJuiceColorNormal.value;
             TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
             LoadDone = true;
             LoadStarted = false;
         }
-        public IEnumerator EnsureShader()
+        public IEnumerator InitializeShaders()
         {
             if (!grayscale.value)
             {
-                mls.LogWarning("Ahader loading interrupted because grayscale effect is off!");
+                Log("Shader loading interrupted because grayscale effect is off!", false, 3);
                 yield break;
             }
-            mls.LogInfo("Ensuring shaders load...");
+            if (grayscaleShader == null)
+            {
+                Log("Shader loading interrupted because grayscale shader is null!", false, 3);
+                yield break;
+            }
+            if (!grayscaleShader.isSupported)
+            {
+                Log("Shader loading interrupted because grayscale shader is not supported!", false, 3);
+                yield break;
+            }
+            Log("Shaders are initializing...");
             do
             {
-                if (Player == null || grayscaleShader == null)
+                if (Player == null)
                     yield return null;
-                if (!grayscaleShader.isSupported)
-                {
-                    mls.LogWarning("grayscaleShaders are not compatible, skipping grayscale effect!");
-                    break;
-                }
                 Camera c = Player.transform.Find("Main Camera/Virtual Camera").GetComponent<Camera>();
                 if (c.gameObject.GetComponent<Grayscaler>() == null)
                     c.gameObject.AddComponent<Grayscaler>();
-                c.gameObject.GetComponent<Grayscaler>().DoIt();
-            } while (Player == null || grayscaleShader == null);
-            mls.LogInfo("Shaders have loaded into the player!");
+                c.gameObject.GetComponent<Grayscaler>().Initialize();
+            } while (Player == null);
+            Log("Shaders have loaded into the player!", true);
         }
         public static GameObject UpdateTerminal(ShopZone ShopComp)
         {
             if (ShopComp == null)
             {
-                mls.LogError("Shop Component is null, cannot update terminal!");
+                Log("Shop Component is null, cannot update terminal!", false, 3);
                 return null;
             }
             GameObject Shop = ShopComp.gameObject;
@@ -1022,49 +663,25 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
         public static Shader FindShader(string name)
         {
-            mls.LogInfo("shearching ULTRAKILL shaders for: " + name);
             foreach (Shader shader in Resources.FindObjectsOfTypeAll<Shader>())
             {
-                mls.LogInfo("-> " + shader.name);
                 if (shader.name == name)
                 {
-                    mls.LogError("found shader!");
                     return shader;
                 }
             }
-            mls.LogError("Couldn't find!");
+            Log("Couldn't find " + name + " shader!", true, 3);
             return null;
-        }
-        public static Texture2D GrayscaleImage(Texture2D original)
-        {
-            if (!original.isReadable) {
-                mls.LogError("Texture is not readable!");
-                return null;
-            }
-            Texture2D grayscaledTexture = new Texture2D(original.width, original.height, original.format, false);
-            Color[] pixels = original.GetPixels();
-
-            for (int i = 0; i < pixels.Length; i++)
-            {
-                Color pixel = pixels[i];
-                float gray = (pixel.r + pixel.g + pixel.b) / 3;
-                pixels[i] = new Color(gray, gray, gray, pixel.a);
-            }
-
-            grayscaledTexture.SetPixels(pixels);
-            grayscaledTexture.Apply();
-
-            return grayscaledTexture;
         }
         public IEnumerator LoadHUD()
         {
             float elapsedTime = 0;
-            mls.LogInfo("Loading HUD Elements...");
+            Log("Loading HUD Elements...", true);
             do
             {
                 if (elapsedTime > 5)
                 {
-                    mls.LogError("Golden Time Bar creation failed after 5 seconds!");
+                    Log("Time Juice Bar creation failed after 5 seconds!", false, 3);
                     yield break;
                 }
                 elapsedTime += Time.unscaledDeltaTime;
@@ -1080,12 +697,12 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             Sprite mm = Sprite.Create(armGoldLogo, new Rect(0, 0, 512, 512), new Vector2(256, 256));
             TimeHUD[0].transform.Find("Icon").gameObject.GetComponent<UnityEngine.UI.Image>().sprite = mm;
             HudController.Instance.speedometer.gameObject.transform.localPosition += new Vector3(0, 64, 0);
-            mls.LogInfo("Golden Time Bar created successfully.");
+            Log("Time Juice Bar created successfully.", true);
             do
             {
                 if (elapsedTime > 5)
                 {
-                    mls.LogError("Golden Time Alt HUD creation failed after 5 seconds!");
+                    Log("Time Juice Alt HUD creation failed after 5 seconds!", false, 3);
                     yield break;
                 }
                 elapsedTime += Time.unscaledDeltaTime;
@@ -1105,54 +722,16 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             TimeHUD[2].transform.localPosition = new Vector3(360, -360, 0);
             Destroy(TimeHUD[2].GetComponent<Speedometer>());
             TimeHUD[2].name = "Time Juice";
-            mls.LogInfo("Golden Time Alt HUD created successfully.");
+            Log("Golden Time Alt HUD created successfully.", true);
+            foreach (var text in FindObjectsOfType<TextMeshProUGUI>(true)) //Fix Disappeared Text #FixTexts
+            {
+                if (text.fontSharedMaterial != null)
+                {
+                    text.fontMaterial = new Material(text.fontSharedMaterial);
+                    text.SetMaterialDirty();
+                }
+            }
             yield break;
-        }
-        public IEnumerator ModifySettingsPage() // for experiments, don't read
-        {
-            mls.LogWarning("creating instances...");
-            SettingsPage sp = SettingsPage.CreateInstance<SettingsPage>();
-            SettingsCategory sc = SettingsCategory.CreateInstance<SettingsCategory>();
-            sc.items = new List<SettingsItem> { };
-            //foreach (object C in CM.BuildAll())
-            //{
-            //    SettingsItem item = SettingsItem.CreateInstance<SettingsItem>();
-            //    //Config<float> tester = new Config<float>(0);
-            //    item.buttonLabel = (string)C.GetType().GetProperty("Name").GetValue(C) + "button";
-            //    item.label = (string)C.GetType().GetProperty("Name").GetValue(C);
-            //    item.name = (string)C.GetType().GetProperty("Name").GetValue(C);
-            //    item.style = SettingsItemStyle.Normal;
-            //    item.itemType = SettingsItemType.Slider;
-            //    item.sliderConfig = new SliderConfig();
-            //    sc.items.Add(item);
-            //    //item.dropdownList = new string[] { "test1", "test2", "test3" };
-            //    //item.sideNote = "this is a literal side note, you can change it or set it to any value you want";
-            //    //item.dropdownList = new string[] { "one", "two", "three" };
-            //}
-            mls.LogWarning("Created instances");
-            sc.title = "Test Title";
-            sc.name = "TestCategory";
-            sc.title = "testCategory";
-            sc.description = "this is a test category, it will be used for Timeless Config";
-            sc.titleDecorator = "++";
-            sp.categories = new SettingsCategory[] { sc };
-            sp.name = "TestPage";
-            mls.LogWarning("Waiting for menu");
-            while (FindRootGameObject("Canvas") == null)
-            {
-                yield return null;
-            }
-            mls.LogWarning("Waiting for options");
-            while (FindRootGameObject("Canvas").transform.Find("OptionsMenu/Pages/Graphics") == null)
-            {
-                yield return null;
-            }
-            SettingsPageBuilder test = FindRootGameObject("Canvas").transform.Find("OptionsMenu/Pages/Graphics").GetComponent<SettingsPageBuilder>();
-            typeof(SettingsPageBuilder).GetField("page", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(test, sp);
-            GameObject G = Instantiate(test.assets.categoryTitlePrefab, test.transform.Find("Scroll Rect/Contents/")).gameObject;
-            G.transform.Find("Text").GetComponent<TextMeshProUGUI>().fontSize = 12;
-            //typeof(SettingsPageBuilder).GetMethod("BuildPage", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(test, new object[] { sp });
-            mls.LogWarning("Test Should Work");
         }
         public static void ResetGoldArm()
         {
@@ -1168,9 +747,10 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
             return null;
         }
-        public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        public void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, LoadSceneMode mode)
         {
-            mls.LogInfo(TimestopperProgress.ToString());
+            Log("scene name: " + scene.name, true, 1);
+            Log(TimestopperProgress.ToString(), true);
             if (scene.name == "b3e7f2f8052488a45b35549efb98d902" /*main menu*/)
             {
                 mls.LogWarning("main menu loaded");
@@ -1188,16 +768,27 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 goldArmText2.SetActive((bool)TimestopperProgress.ArmStatus(TProgress.hasArm));
             }
             TimeLeft = (float)TimestopperProgress.ArmStatus(TProgress.maxTime);
+            foreach (var text in FindObjectsOfType<TextMeshProUGUI>(true)) //Fix Disappeared Text
+            {
+                if (text.fontSharedMaterial != null)
+                {
+                    text.fontMaterial = new Material(text.fontSharedMaterial);
+                    text.SetMaterialDirty();
+                }
+            }
             if (scene.name != "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ &&
                 scene.name != "Bootstrap" && LoadDone &&
-                scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
+                scene.name != "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/ &&
+                scene.name != "4c18368dae54f154da2ae65baf0e630e" /*intermission 1*/ &&
+                scene.name != "d8e7c3bbb0c2f3940aa7c51dc5849781" /*intermission 2*/)
             {
                 if (Playerstopper.Instance == null)
                     MonoSingleton<NewMovement>.Instance.gameObject.GetComponent<Playerstopper>();
                 if (forceDowngrade.value)
                     TimestopperProgress.ForceDownngradeArm();
                 StartCoroutine(LoadHUD());
-                StartCoroutine(EnsureShader());
+                if (grayscale.value)
+                    StartCoroutine(InitializeShaders());
                 StatsManager.checkpointRestart += ResetGoldArm;
                 if (firstLoad && !(bool)TimestopperProgress.ArmStatus(TProgress.hasArm)) //display the message for newcomers
                 {
@@ -1226,7 +817,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             // Update the Level
             if (ConfirmLevel("VIOLENCE /// FIRST")) // Add the door to the level
             {
-                mls.LogInfo("violence level detected");
+                Log("7-1 level detected", true);
                 GameObject newdoor = Instantiate(GameObject.Find("Crossroads -> Forward Hall"), GameObject.Find("Stairway Down").transform);
                 newdoor.name = "Stairway Down -> Gold Arm Hall";
                 newdoor.transform.position = new Vector3(-14.6292f, -25.0312f, 590.2311f);
@@ -1287,7 +878,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 //altarcomp.deactivateOnSuccess = new GameObject[1] {
                 //                GameObject.Find("First Section/Opening Halls Geometry/Opening Nonstuff/Forward Hall -> Stairway Down/Blocker")
                 //};
-                mls.LogInfo("Added The Cube");
+                Log("Added The Arm Cube", true);
             }
             // Cybergrind Music Explorer Compatability
             if (scene.name == "9240e656c89994d44b21940f65ab57da")
@@ -1301,9 +892,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     {
                         UnityEngine.Component C = FindObjectOfType(Comp) as UnityEngine.Component;
                         if (C != null) C.gameObject.transform.localPosition += new Vector3(0, 60, 0);
-                        else mls.LogError("Component C is null!");
+                        else Log("Component C is null!", true, 3);
                     }
-                    else mls.LogError("Could not get Jukebox.Components.NowPlayingHud");
+                    else Log("Could not get Jukebox.Components.NowPlayingHud, Cybergrind Music Explorer may have errors", true, 3);
                 }
             }
             else
@@ -1312,7 +903,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 Compatability_JukeBox = false;
             }
         }
-        public void OnSceneUnloaded(Scene scene)
+        public void OnSceneUnloaded(UnityEngine.SceneManagement.Scene scene)
         {
             if (scene.name != "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ &&
                 scene.name != "Bootstrap" && LoadDone &&
@@ -1361,7 +952,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 }
             }
             foreach (AudioSource A in FindObjectsOfType<AudioSource>())  //Add the pitching effect to all AudioSources except the ones on Player
-                if (A.gameObject.GetComponent<Audiopitcher>() == null && A.gameObject.transform.parent != Player.transform)
+                if (A.gameObject.GetComponent<Audiopitcher>() == null && !(A.gameObject.transform.IsChildOf(Player.transform) || A.gameObject == Player))
                     A.gameObject.AddComponent<Audiopitcher>();
             foreach (Animator A in FindObjectsOfType<Animator>())   // Make animations work in stopped time when time is stopped
                 if (A.gameObject.transform.IsChildOf(Player.transform) && A.updateMode == AnimatorUpdateMode.Normal)
@@ -1459,6 +1050,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         {
             if (TimeHUD != null)
             {
+                if (TimeHUD[0] == null || TimeHUD[1] == null || TimeHUD[2] == null)
+                    return;
                 Color G = TimeHUD[0].transform.Find("Image/Image (1)").gameObject.GetComponent<UnityEngine.UI.Image>().color;
                 float F = TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().fillAmount;
                 TimeHUD[0].transform.Find("Image").gameObject.GetComponent<UnityEngine.UI.Image>().enabled = true;
@@ -1472,13 +1065,13 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     if (TimeHUD[1].transform.Find("Text (TMP)").gameObject.activeInHierarchy)
                     {
                         TimeHUD[1].SetActive(true);
-                        TimeHUD[1].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, 4);
+                        TimeHUD[1].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, Math.Min(4, (TimeLeft).ToString().Length));
                         TimeHUD[1].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().color = (G * 5 + TimeColor) * (Time.unscaledDeltaTime) / (6 * Time.unscaledDeltaTime);
                     }
                     else if (TimeHUD[2].transform.Find("Text (TMP)").gameObject.activeInHierarchy)
                     {
                         TimeHUD[2].SetActive(true);
-                        TimeHUD[2].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, 4);
+                        TimeHUD[2].transform.Find("Text (TMP)").GetComponent<TextMeshProUGUI>().text = (TimeLeft).ToString().Substring(0, Math.Min(4, (TimeLeft).ToString().Length));
                     }
                     else
                     {
@@ -1552,7 +1145,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         {
             if (SceneManager.GetActiveScene().name == "b3e7f2f8052488a45b35549efb98d902" /*main menu*/ ||
             SceneManager.GetActiveScene().name == "Bootstrap" ||
-            SceneManager.GetActiveScene().name == "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/)
+            SceneManager.GetActiveScene().name == "241a6a8caec7a13438a5ee786040de32" /*newblood screen*/ ||
+            SceneManager.GetActiveScene().name == "4c18368dae54f154da2ae65baf0e630e" /*intermission 1*/ ||
+            SceneManager.GetActiveScene().name == "d8e7c3bbb0c2f3940aa7c51dc5849781" /*intermission 2*/)
             {
                 return;
             }
@@ -1595,11 +1190,24 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         }
     }
 
+    /// <summary>
+    /// /////////////////////////////////////// UNDONE - WIP FOR DUAL WIELD /////////////////////////////////
+    /// </summary>
+    //public class InvokeCaller : MonoBehaviour 
+    //{
+    //    private Dictionary<string, float> invokes = new Dictionary<string, float>();
+    //    public MonoBehaviour target;
+
+    //    void Update()
+    //    {
+
+    //    }
+    //}
     public class Audiopitcher : MonoBehaviour
     {
         AudioSource audio;
         float originalPitch = 1;
-        bool music = false;
+        bool music { get { return (audio.loop == true && audio.spatialBlend == 0) || audio == MonoSingleton<MusicManager>.Instance.targetTheme; } }
         bool awake = true;
         public void LateUpdate()
         {
@@ -1609,8 +1217,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             {
                 audio = GetComponent<AudioSource>();
                 originalPitch = audio.pitch;
-                if ((Timestopper.cybergrind && gameObject == GameObject.Find("MusicChanger/Battle Theme")) || (audio == MonoSingleton<MusicManager>.Instance.targetTheme))
-                    music = true;
                 awake = false;
             }
             if (Timestopper.realTimeScale == 1.0f)
@@ -1619,7 +1225,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 originalPitch = audio.pitch;
                 return;
             }
-            if (!music || audio == MonoSingleton<MusicManager>.Instance.targetTheme)
+            if (!music)
             {
                 audio.pitch = originalPitch * Timestopper.realTimeScale;
             } else
@@ -1627,34 +1233,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 audio.pitch = Timestopper.realTimeScale * (1 - Timestopper.stoppedMusicPitch.value) + Timestopper.stoppedMusicPitch.value;
                 MonoSingleton<MusicManager>.Instance.volume = Timestopper.realTimeScale * (1 - Timestopper.stoppedMusicVolume.value) + Timestopper.stoppedMusicVolume.value;
             }
-
-
-            //if (GetComponent<AudioSource>() != null && Timestopper.realTimeScale <= 1.0f)
-            //{
-            //    if (transform.parent != null)
-            //    {
-            //        if (GetComponent<AudioSource>() == MonoSingleton<MusicManager>.Instance.targetTheme)
-            //            if (Timestopper.realTimeScale > 0.0f)
-            //            {
-            //                GetComponent<AudioSource>().pitch = Timestopper.realTimeScale * (1 - Timestopper.stoppedMusicPitch.value) + Timestopper.stoppedMusicPitch.value;
-            //                MonoSingleton<MusicManager>.Instance.volume = Timestopper.realTimeScale * (1 - Timestopper.stoppedMusicVolume.value) + Timestopper.stoppedMusicVolume.value;
-            //            }
-            //            else
-            //            {
-            //                GetComponent<AudioSource>().pitch = Timestopper.stoppedMusicPitch.value;
-            //                MonoSingleton<MusicManager>.Instance.volume = Timestopper.stoppedMusicVolume.value;
-            //            }
-            //    }
-            //    else
-            //    {
-            //        if (Timestopper.realTimeScale > 0.0f)
-            //        {
-            //            GetComponent<AudioSource>().pitch = Timestopper.realTimeScale;
-            //        }
-            //        else
-            //            GetComponent<AudioSource>().pitch = 0;
-            //    }
-            //}
         }
     }
 
@@ -1719,39 +1297,42 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         private Material _material;
         private Material _slapper;
         public float Grayscale;
-        public void DoIt()
+        public void Initialize()
         {
-            if (!Timestopper.grayscale.value || !Timestopper.grayscaleShader.isSupported)
+            if (!Timestopper.grayscaleShader.isSupported || Timestopper.grayscaleShader == null)
+            {
+                Timestopper.Log("Grayscale shaders attempted initialization but was either null or unsupported!", false, 3);
                 return;
+            }
+            if (!Timestopper.slappShader.isSupported || Timestopper.slappShader == null)
+            {
+                Timestopper.Log("Image slapper shaders attempted initialization but was either null or unsupported!", false, 3);
+                return;
+            }
             if (!R.IsCreated())
                 R.Create();
             if (!T.IsCreated())
                 T.Create();
-            if (Timestopper.grayscaleShader != null)
-                _material = new Material(Timestopper.grayscaleShader);
-            if (Timestopper.slappShader != null)
-                _slapper = new Material(Timestopper.slappShader);
-            GameObject C = new GameObject();
-            GameObject B = Instantiate(C, transform.parent);
-            B.AddComponent<Camera>();
-            camera = B.GetComponent<Camera>();
+            _material = new Material(Timestopper.grayscaleShader);
+            _slapper = new Material(Timestopper.slappShader);
+            camera = Instantiate(new GameObject(), transform.parent).AddComponent<Camera>();
+            transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = false;
+            camera.gameObject.name = "New Camera by Galvin";
         }
         void LateUpdate()
         {
             if (Timestopper.grayscaleShader != null)
                 if (!Timestopper.grayscaleShader.isSupported)
                 {
-                    Timestopper.mls.LogError("grayscaler attempted grayscale but the shader was null, turning geayscale effect off!");
+                    Timestopper.Log("grayscaler attempted grayscale but the shader was unsupported, turning geayscale effect off!", false, 3);
                     Timestopper.grayscale.value = false;
+                    transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = true;
+                    return;
                 }
-            if (Timestopper.grayscale.value)
-                transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = false;
-            else
-                transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = true;
         }
         void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
-            if (_material != null && _slapper != null && Timestopper.grayscale.value)
+            if (_material != null && _slapper != null)
             {
                 if (Timestopper.exclusiveGrayscale.value)
                     Grayscale = (1 - Timestopper.realTimeScale);
@@ -1774,21 +1355,20 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
             else
             {
-                if (!Timestopper.grayscale.value || !Timestopper.grayscaleShader.isSupported)
-                {
-                    transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = true;
-                    Timestopper.Player.transform.Find("Main Camera/HUD Camera").GetComponent<Camera>().targetTexture = null;
-                    Graphics.Blit(source, destination);
-                    Timestopper.HUDCamera.enabled = true;
-                    Timestopper.HUDCamera.targetTexture = null;
-                    this.enabled = false;
-                    return;
-                }
+                //if (!Timestopper.grayscaleShader.isSupported)
+                //{
+                //    transform.parent.Find("HUD Camera").gameObject.GetComponent<Camera>().enabled = true;
+                //    Timestopper.Player.transform.Find("Main Camera/HUD Camera").GetComponent<Camera>().targetTexture = null;
+                //    Graphics.Blit(source, destination);
+                //    Timestopper.HUDCamera.enabled = true;
+                //    Timestopper.HUDCamera.targetTexture = null;
+                //    this.enabled = false;
+                //    return;
+                //}
                 if (Timestopper.grayscaleShader != null)
                     _material = new Material(Timestopper.grayscaleShader);
                 if (Timestopper.slappShader != null)
                     _slapper = new Material(Timestopper.slappShader);
-                //Timestopper.mls.LogError("From Inside Grayscaler [Runtime] >> Material is null or cannot be used. Grayscale disabled.");
                 //this.enabled = false;
             }
         }
@@ -1841,10 +1421,11 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     {
         public void OnCollisionEnter(Collision col)
         {
-            Timestopper.mls.LogInfo("Armitem Has Collided With " + col.gameObject.name);
+            Timestopper.Log("Armitem Has Collided With " + col.gameObject.name, true);
             if (col.gameObject.name == "Player")
             {
                 TimestopperProgress.GiveArm();
+                MonoSingleton<HudMessageReceiver>.Instance.SendHudMessage(string.Format(Timestopper.ARM_PICKUP_MESSAGE, Timestopper.stopKey.value), "", "", 2);
                 gameObject.SetActive(false);
                 gameObject.transform.GetChild(0).gameObject.SetActive(false);
                 enabled = false;
@@ -2161,7 +1742,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             yield return Timestopper.armGoldObj;
             yield return transform.Find("Main Camera/Punch");
             GameObject GoldArm = Instantiate(Timestopper.armGoldObj, transform.Find("Main Camera/Punch"));
-            Timestopper.mls.LogInfo("Loaded gold arm: " + GoldArm);
+            Timestopper.Log("Loaded gold arm: " + GoldArm, true);
             GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material = new Material(Timestopper.FindShader("ULTRAKILL/Master")) {
                 mainTexture = Timestopper.armGoldColor };
             GoldArm.GetComponentInChildren<SkinnedMeshRenderer>().material.EnableKeyword("VERTEX_LIGHTING");
@@ -2180,7 +1761,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             GoldArm.AddComponent<WalkingBob>();
             GoldArm.transform.GetChild(1).gameObject.SetActive(false);
             //GoldArm.SetActive((bool)TimestopperProgress.ArmStatus(TProgress.equippedArm));
-            Timestopper.mls.LogInfo("Golden Arm created successfully.");
+            Timestopper.Log("Golden Arm created successfully.", true);
             yield break;
         }
         public void FixedUpdateFix(Transform target)
@@ -2258,6 +1839,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
 
         private void Update()
         {
+            if (Time.timeSinceLevelLoad < 0.2f)
+                return;
             JumpReadyTimer.Update();
             NotJumpingTimer.Update();
             if (Timestopper.specialMode.value)
@@ -2265,7 +1848,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 if (UnityInput.Current.GetKeyDown(KeyCode.J))
                 {
                     GameProgressSaver.AddMoney((int)TimestopperProgress.ArmStatus(TProgress.upgradeCost));
-                    Timestopper.mls.LogInfo("MONEY MONEY MONEY");
+                    Timestopper.Log("MONEY MONEY MONEY", false);
                 }
             }
             //GoldArm.transform.localEulerAngles = new Vector3(0f, 235f, 20f);
@@ -2286,7 +1869,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     GoldArm.transform.GetChild(1).gameObject.SetActive(true);
                     GoldArm.GetComponent<Animator>().Play("Stop");
                     FixedUpdateFix(transform);
-                    Timestopper.mls.LogInfo("Time stops!");
+                    Timestopper.Log("Time stops!", true);
                 }
                 else
                 {
@@ -2295,7 +1878,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     GoldArm.transform.GetChild(1).gameObject.SetActive(true);
                     GoldArm.GetComponent<Animator>().Play("Release");
                     Timestopper.BlindCheat.Disable();
-                    Timestopper.mls.LogInfo("Time resumes.");
+                    Timestopper.Log("Time flows normally.", true);
                 }
             }
             if (movement.dead)
@@ -2376,9 +1959,10 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             var deltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
             var fixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
             var playerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
-            //var unscaledGetter = AccessTools.PropertyGetter(typeof(Time), nameof(Time.unscaledDeltaTime));
-            //var fixedUnscaledDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedUnscaledDeltaTime));
             var playerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
+            var timeScaleG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale));
+            var playerTimeScaleG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerTimeScale));
+
             ManualLogSource mls = BepInEx.Logging.Logger.CreateLogSource(Timestopper.Name);
 
             mls.LogWarning($"Transpiling " + name + "...");
@@ -2399,6 +1983,14 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     newInst.blocks.AddRange(i.blocks);
                     yield return newInst;
                     //mls.LogInfo($"modified fixedDeltaTime");
+                }
+                else if (i.Calls(timeScaleG))
+                {
+                    var newInst = new CodeInstruction(OpCodes.Call, playerTimeScaleG);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
+                    //mls.LogInfo($"modified timeScale");
                 }
                 else
                 {
@@ -2494,6 +2086,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     [HarmonyPatch(typeof(HookArm), "Update")] public class TranspileHookArm { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HookArm]=> Update"); }
     [HarmonyPatch(typeof(HookArm), "FixedUpdate")] public class TranspileHookArm1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HookArm]=> FixedUpdate()"); }
     [HarmonyPatch(typeof(HookArm), "SemiBlockCheck")] public class TranspileHookArm2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[HookArm]=> SemiBlockCheck()"); }
+    [HarmonyPatch(typeof(Sandbox.Arm.SandboxArm), "Update")] public class TranspileSandboxArm { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[SandboxArm]=> Update()"); }
     [HarmonyPatch(typeof(SpriteController), "Awake")]
     class Patch
     {
