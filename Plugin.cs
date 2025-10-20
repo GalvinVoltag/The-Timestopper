@@ -18,6 +18,117 @@ using PluginConfig.API;
 using PluginConfig.API.Fields;
 using System.ComponentModel;
 using GameConsole.Commands;
+using System.CodeDom;
+using static UnityEngine.InputSystem.LowLevel.InputStateHistory;
+using static UnityEngine.ParticleSystem;
+using The_Timestopper;
+using BULL;
+
+namespace BULL
+{
+    public class Version
+    {
+        int _main, _sub, _patch;
+        string _compliment;
+        bool _preRelease;
+        int[] verArray { get { return new int[] { _main, _sub, _patch}; } }
+        Vector2 gmgm;
+        public Version(string versionString, bool preRelease = false) 
+        {
+            _main = int.Parse(versionString.Split('.')[0]);
+            _sub = int.Parse(versionString.Split('.')[1]);
+            _patch = int.Parse(versionString.Split('.')[2]);
+            if (versionString.Split(new char[] { '.' }, 3)[2].Split('.', '-', '_', ' ').Length != 0)
+                _compliment = (versionString.Split(new char[] { '.' }, 3)[2].Split('.', '-', '_', ' ')[1]);
+            _preRelease = preRelease;
+        }
+        public Version(int main, int sub, int patch, string compliment = null, bool preRelease = false) 
+        {
+            _main = main;
+            _sub = sub;
+            _patch = patch;
+            _compliment = compliment;
+            _preRelease = preRelease;
+        }
+        
+        public string toString()
+        {
+            string prestr = "";
+            string compstr = "";
+            if (_compliment != null)
+                compstr = "-" + _compliment;
+            return (string)(prestr+_main.ToString() + "."+_sub.ToString()+"."+_patch.ToString()+compstr);
+        }
+
+        public static bool operator <(Version a, Version b)
+        {
+            if (a._preRelease != b._preRelease)
+                return !a._preRelease;
+            for (int i = 0; i < 3; i++)
+            {
+                if (a.verArray[i] > b.verArray[i])
+                    return true;
+            }
+            if (string.Compare(a._compliment, b._compliment) < 0)
+                return true;
+            return false;
+        }
+        public static bool operator >(Version a, Version b)
+        {
+            return b<a;
+        }
+    }
+
+    public class Progress<T> where T : Progress<T>, new()
+    {
+        private static T _instance;
+        public static T Instance
+        {
+            get {
+                if (_instance == null)
+                    _instance = Read();
+                return _instance; 
+            }
+        }
+        public string filename { get; private set; }
+        public Version version { get; private set; }
+        public Progress(string fileName)
+        {
+            filename = fileName;
+            version = new Version("0.0.0");
+            Read();
+        }
+        public Progress(string fileName, Version Version)
+        {
+            filename = fileName;
+            version = Version;
+            Read();
+        }
+
+
+        public static T Read()
+        {
+            string filePath = Path.Combine(GameProgressSaver.SavePath, Instance.filename);
+            if (File.Exists(filePath))
+            {
+                string jsonData = File.ReadAllText(filePath);
+                T newdata = JsonUtility.FromJson<T>(jsonData);
+                return newdata;
+            }
+            return default(T);
+        }
+
+        public static void Write()
+        {
+            string filePath = Path.Combine(GameProgressSaver.SavePath, Instance.filename);
+            string jsonData = JsonUtility.ToJson(Instance, true);
+            File.WriteAllText(filePath, jsonData);
+        }
+    }
+
+
+    
+}
 
 namespace The_Timestopper
 {
@@ -192,8 +303,34 @@ namespace The_Timestopper
         }
     }
 
+    [Serializable]
+    public class ModSave : BULL.Progress<ModSave>
+    {
+        private bool gamermode = true;
+        public bool GamerMode
+        {
+            get { return gamermode; }
+            set { if (value != gamermode) { gamermode = value; Write(); } }
+        }
+        public ModSave() : base("ModName.state")
+        {
 
+        }
+    }
+    [Serializable]
+    public class MySave : BULL.Progress<MySave>
+    {
+        private string gamer = "girl";
+        public string Gamer
+        {
+            get { return gamer; }
+            set { if (value != gamer) { gamer = value; Write(); } }
+        }
+        public MySave() : base("MyMod.state", new BULL.Version("1.2.0"))
+        {
 
+        }
+    }
 
 
 
@@ -342,6 +479,9 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
         }
         void Awake()
         {
+            
+
+
             if (Instance == null) { Instance = this; }
 
             Log("The Timestopper has awakened!");
@@ -751,6 +891,8 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
         {
             Log("scene name: " + scene.name, true, 1);
             Log(TimestopperProgress.ToString(), true);
+            //string s = MySave.Instance.Gamer;
+            //bool b = ModSave.Instance.GamerMode;
             if (scene.name == "b3e7f2f8052488a45b35549efb98d902" /*main menu*/)
             {
                 mls.LogWarning("main menu loaded");
@@ -799,6 +941,13 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                         firstLoad = false;
                     };
                     messageTimer.SetTimer(6, true);
+                }
+                foreach(FishObjectReference F in FindObjectsOfType<FishObjectReference>(true))
+                {
+                    if (F.gameObject.name == "GoldArmPickup")
+                    {
+                        F.gameObject.AddComponent<GoldArmItem>();
+                    }
                 }
                 MonoSingleton<StyleHUD>.Instance.RegisterStyleItem("timestopper.timestop", TIMESTOP_STYLE); // register timestop style
                 //newRoom = Instantiate(newRoomObj, transform);
@@ -1430,11 +1579,6 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                 gameObject.transform.GetChild(0).gameObject.SetActive(false);
                 enabled = false;
             }
-        }
-        public void Update()
-        {
-            GameObject handcircle = gameObject.transform.GetChild(0).GetChild(0).GetChild(0).GetChild(0).GetChild(1).GetChild(0).GetChild(0).gameObject;
-            handcircle.transform.localEulerAngles = new Vector3(Time.timeSinceLevelLoad * 360 * 4, 0f, -90f);
         }
     }
 

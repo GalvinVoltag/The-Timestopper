@@ -2,6 +2,16 @@
 
 
 <details>
+  <summary>1.1.0 </summary>
+
+  #### About The Door
+  - Added new functionality to recognize Timestopper prefab by its name and components
+
+</details>
+
+---
+
+<details>
   <summary>1.0.5 | config change </summary>
 
   #### Very Small
