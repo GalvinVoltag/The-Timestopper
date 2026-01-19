@@ -1,8 +1,8 @@
 {
   "name": "The_Timestopper",
-  "version_number": "1.0.5",
+  "version_number": "1.5.0",
   "website_url": "https://github.com/GalvinVoltag/The-Timestopper",
-  "description": "The Golden Arm has the ability to Stop Time at will",
+  "description": "The Timestopper has the ability to Stop Time at will",
   "dependencies": [
     "BepInEx-BepInExPack-5.4.2100",
     "EternalsTeam-PluginConfigurator-1.10.2"

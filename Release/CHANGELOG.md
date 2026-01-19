@@ -2,10 +2,47 @@
 
 
 <details>
-  <summary>1.1.0 </summary>
+  <summary>1.5.0 | REMASTER + tons of bugfixes + QoL </summary>
 
-  #### About The Door
-  - Added new functionality to recognize Timestopper prefab by its name and components
+  #### Summary
+  - Various performance improvements
+  - New shaders!
+  - Better HUD integration
+  - Full audio customization
+  - **DualWield powerup now works as intended!**
+  - **JackHammer now works in timestop as intended!**
+  - TimeArmPickup prefab in the assetbundle
+  - Enemies now take time to relocate the Player after timestop
+  - **Fixed** weird enemy behavior due to use of BlindCheat in stopped time
+  - **Fixed** weird backface issue in Timestopper's fingers
+  - **Fixed** disappearing text completely
+  - **Fixed** V2 softlock when V2 was defeated during timestop
+  - **Fixed** Speedometer and other player speed getter related problems
+  - **Fixed** Inverted crosshair not working with grayscale shaders
+
+
+  #### Technical Wrapup
+  - Added Timestopper Pickup prefab into the assetbundle
+  - Fixed text disappearance by not using Graphics.Blit()
+    - Instead, a very thick cube right in front of the Main Camera is spawned with a transparent grayscale shader
+    - A depth camera renders a depth texture for the shader to use, inside a global variable called _MyCustomDepth
+    - This shader should be more bug free, since there is no more rendering the HUD twice to maintain color
+  - BlindCheat is no longer used to prevent visual bugs during timestop, instead a Player dummy is replaced in the PlayerTracker instance
+    - This also fixes V2-1st softlock if she was defeated during timestop
+  - Added the WaitForPlayerSeconds() yieldInstruction
+    - Patched JackHammer to change all WaitForSeconds() to WaitForPlayerSeconds()
+  - Performance inprovements
+    - Gibs are no longer simulated when they are completely halt
+    - Hud no longer renders twice for the grayscale effect
+    - Epensive function calls per frame have been reduced
+    - HUD elements operate on custom scripts directly attached to them
+    - Active game object tracking instead of per frame search operations
+  - The arm is now called Time Arm instead of Gold Arm to avoid confusion upon the release of official Golden Arm
+  - More efficient asset bundle and TimeArm prefab
+  - Functionality is now inside the arm instance itself rather than looking up variables tied to the Player
+  - Certain functions were carried to their own classes that make more sense
+  - got rid of FindRootGameobject()
+  - added TimeHUD class for Time Juice Bar HUD element
 
 </details>
 

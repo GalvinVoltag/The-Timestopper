@@ -1,4 +1,4 @@
-# THE TIMESTOPPER
+# THE TIMESTOPPER  V 1.5.0
 A simple mod to bring your jojo fantasies into ULTRAKILL!
 -------
 ### You can do shit like this:
@@ -22,33 +22,29 @@ It is also very OP, balancing timestop without keeping it as cool as it is is ve
 ****
 
 ### Abilities:
-+ +You can punch enemies in stopped time, they will fly away when you start it
-+ +You can still throw coins in stopped time, they will remain in air after a while, crazy tricks are possible
-+ +You can still parry in stopped time
-+ +No Weapon Cooldown cheat works with gold arm
-+ +Gold Arm is upgradable through terminals fr
-+ +Customizable animation speed, timestop speed, healability, shader effects, and more...
-+ +~someone is watching you~
++ You can punch and grapple enemies in stopped time, they will fly away when you start it
++ You can still throw coins in stopped time, they will remain in air, crazy tricks are possible!
++ You can still parry in stopped time
++ You can add your own sound effects and select any of which you wish
++ "No Weapon Cooldown" cheat works with Timestopper too
++ Gold Arm is upgradable through terminals fr fr
++ Customizable animation speed, timestop speed, healability, shader effects, and more...
++ ~~someone is watching you~~
 
 ### To do:
-+ Custom boss to obtain the gold arm from, not a statue that cums it out
-+ Make *Special Mode* actually work
++ HandPaint compatability
++ Custom layer to obtain the gold arm from, not an altar that cums it out
++ Make *Special Mode* actually do something
 + Make certain bosses able to move in stopped time, optional, maybe
-+ More balancing work, overclocking mechanism, more visual trickery, etc.
-+ ~Touch grass~
-+ Make the gold arm appear in main menu V1 cool ascii art thingy
++ ~~Touch grass~~
 + Add sound to arm pickup animation too
-+ Add the warning a sound
 + Add more easter eggs
 + Beat P-2 without cheating
-+ ~Make more friends~
 
 ### Downsides / Current Bugs:
-- -Movement is a little bit janky in stopped time.
-- -~The pillar cums out the yellow arm wtf!~
-- -Stuck infinitely after act ending cutscenes, haven't checked if it's still there? (needs testing)
+- -~~The pillar cums out the yellow arm wtf!~~
+- -Stuck infinitely after act ending cutscenes (?)
 - -No special mode yet
-- -No "ZA WARUDO" voiceline yet, only the sound effect
 
 
 
