@@ -1,4 +1,4 @@
-# THE TIMESTOPPER
+# THE TIMESTOPPER  V 1.5.0
 A mod to bring your jojo fantasies into ULTRAKILL!
 -------
 ### You can do shit like this:
@@ -12,6 +12,9 @@ or like this:
 
 
 -----
+
+<img width="792" height="965" alt="image" src="https://github.com/user-attachments/assets/c749a532-8b55-437b-9093-1f9dbf508adf" />
+
 ------
 
 ## Disclaimer!
@@ -21,27 +24,29 @@ However, any worries for it might corrupt your save files are unnecessary, you c
 ****
 
 ### Abilities:
-+ +You can punch enemies in stopped time, and they will keep their momentum
-+ +You can still throw coins, parry, use the wiplash, pick up items, etc. in stopped time, just fine
-+ +No Weapon Cooldown cheat works with the Gold Arm
-+ +Gold Arm is upgradable through terminals fr fr
-+ +The Freezeframe is able to move rockets in stopped time with the alt-fire, so you can ride them
-+ +The Timestopper can be seen in the main menu when obtained
-+ +Customizable animation speed, timestop speed, hard damage, shader effects, maximum upgrades, and more...
++ You can punch and grapple enemies in stopped time, they will fly away when you start it
++ You can still throw coins in stopped time, they will remain in air, crazy tricks are possible!
++ You can still parry in stopped time
++ You can add your own sound effects and select any of which you wish
++ "No Weapon Cooldown" cheat works with Timestopper too
++ Gold Arm is upgradable through terminals fr fr
++ Customizable animation speed, timestop speed, healability, shader effects, and more...
++ ~~someone is watching you~~
 
 ### To do:
-+ Custom map to obtain Gold Arm
-+ Make *Special Mode* actually work
++ HandPaint compatability
++ Custom layer to obtain the gold arm from, not an altar that cums it out
++ Make *Special Mode* actually do something
 + Make certain bosses able to move in stopped time, optional, maybe
-+ More balancing work, overclocking mechanism (just maybe), more visual customization (all custom shaders), etc.
-+ Add sound to arm pickup animation
++ ~~Touch grass~~
++ Add sound to arm pickup animation too
 + Add more easter eggs
++ Beat P-2 without cheating
 
 ### Downsides / Current Bugs:
-- -Movement might a little bit janky in stopped time.
-- -Game crashes if you skip intermissions, better read allat
-- -No special mode yet   :,(
-- -No "ZA WARUDO" voiceline yet
+- -~~The pillar cums out the yellow arm wtf!~~
+- -Stuck infinitely after act ending cutscenes (?)
+- -No special mode yet
 
 ### �How to work with controllers�
 Unfortunately, ULTRAKILL's controller inputs are smoothed, which means they stop when time stops too. But there is a solution, altough it be somewhat tideous.
