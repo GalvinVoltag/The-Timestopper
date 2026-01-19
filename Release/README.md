@@ -6,7 +6,7 @@ A mod to bring your jojo fantasies into ULTRAKILL!
 
 or like this:
 <img alt="image" src="https://github.com/user-attachments/assets/0f867686-e448-4c43-a29b-eda7fc8af9e9" />
-(Yes, the grayscale effect is also included (not yet for Linux), and customizable)
+(Yes, the grayscale effect is also included, and customizable)
 
 
 
