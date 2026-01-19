@@ -9,14 +9,16 @@ or like this:
 ![image](https://github.com/user-attachments/assets/36ec4e68-94fc-4c1c-8a82-60b53ae3a94c)
 (Yes, the grayscale effect is also included, and customizable)
 
-
-
-
 -----
+
+<img width="528" height="643" alt="image" src="https://github.com/user-attachments/assets/64071a4f-29b3-4969-b1b7-b5d1560c22f8" />
+
+
 ------
 
 ## Disclaimer!
-This mod is not recommended for serious playthroughs, it is meant for funzies mostly. It is not fully done and bugs may occur. I recommend you to back up your save files if there is anything important there for you.
+This mod is not recommended for serious playthroughs, it is meant for funzies mostly.
+
 It is also very OP, balancing timestop without keeping it as cool as it is is very hard
 
 ****
