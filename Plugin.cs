@@ -221,7 +221,7 @@ namespace The_Timestopper
     {
         public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "1.5.0";
+        public const string Version = "1.5.3";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -431,6 +431,7 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
         }
         public void ReloadSoundProfilesList()
         {
+            BakeVertexLights.
             bool reCopyFiles = false;
             string[] sounddirectories = new[] { "Stopping", "Stopped", "Starting"};
             if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds")))
@@ -453,17 +454,17 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                     Directory.CreateDirectory(Path.Combine(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory)));
                     
                     foreach (string file in Directory.GetFiles(
-                                 Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", "Sounds", sounddirectory),
-                                 "*.*").Select(Path.GetFileName))
+                                 Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper"),
+                                 "*.*").Select(Path.GetFileName).Where(filename => filename.EndsWith(".ogg") && filename.StartsWith(sounddirectory)))
                     {
                         Log("copying over sound file: " + sounddirectory + "/" + file, false, 3);
                         if (!File.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory, file)))
-                            File.Copy(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", "Sounds", sounddirectory, file),
-                                        Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory, file));
+                            File.Copy(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", sounddirectory + "-" + file.TrimStart((sounddirectory + "-").ToCharArray())),
+                                        Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory, file.TrimStart((sounddirectory + "-").ToCharArray()) ));
                     }
                 }
                 if (!File.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "README.txt")))
-                    File.Copy(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", "Sounds", "README.txt"),
+                    File.Copy(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", "Sounds-readme.txt"),
                                 Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "README.txt"));
             }
             string[] timestopSoundsList = Directory.GetFiles(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "Stopping"), "*.*").
@@ -563,7 +564,7 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 soundReloadButton.onClick += () => { StartCoroutine(LoadSoundProfiles()); };
 
                 soundFileButton = new ButtonField(config.rootPanel, "Open Sound Profile Folder", "soundprofilebutton");
-                soundFileButton.onClick += () => { System.Diagnostics.Process.Start(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds")); };
+                soundFileButton.onClick += () => { Application.OpenURL(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds")); };
                 
                 // ReSharper disable once ObjectCreationAsStatement
                 new PluginConfig.API.Decorators.ConfigSpace(config.rootPanel, 4);
@@ -623,7 +624,8 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
             startSound.interactable = false;
             stoppedSound.interactable = false;
             soundReloadButton.interactable = false;
-            string[] timestopSoundsList = Directory.GetFiles(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", "Sounds", "Stopping"), "*.*").
+            ReloadSoundProfilesList();
+            string[] timestopSoundsList = Directory.GetFiles(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "Stopping"), "*.*").
                     Where(file => file.EndsWith(".wav") || file.EndsWith(".ogg")).ToArray();
             TimestopSounds = new AudioClip[timestopSoundsList.Length];
             for (int i = 0; i < timestopSoundsList.Length; i++)
@@ -640,7 +642,7 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 }
             }
             
-            string[] stopambienceSoundsList = Directory.GetFiles(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", "Sounds", "Stopped"), "*.*").
+            string[] stopambienceSoundsList = Directory.GetFiles(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "Stopped"), "*.*").
                 Where(file => file.EndsWith(".wav") || file.EndsWith(".ogg")).ToArray();
             StoppedTimeAmbiences = new AudioClip[stopambienceSoundsList.Length];
             for (int i = 0; i < stopambienceSoundsList.Length; i++)
@@ -657,7 +659,7 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 }
             }
             
-            string[] timestartSoundsList = Directory.GetFiles(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", "Sounds", "Starting"), "*.*").
+            string[] timestartSoundsList = Directory.GetFiles(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "Starting"), "*.*").
                 Where(file => file.EndsWith(".wav") || file.EndsWith(".ogg")).ToArray();
             TimestartSounds = new AudioClip[timestartSoundsList.Length];
             for (int i = 0; i < timestartSoundsList.Length; i++)

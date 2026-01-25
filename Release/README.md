@@ -1,4 +1,4 @@
-# THE TIMESTOPPER  V 1.5.0
+# THE TIMESTOPPER  V 1.5.3
 A mod to bring your jojo fantasies into ULTRAKILL!
 -------
 ### You can do shit like this:
