@@ -221,7 +221,7 @@ namespace The_Timestopper
     {
         public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "1.5.3";
+        public const string Version = "1.5.4";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -431,7 +431,6 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
         }
         public void ReloadSoundProfilesList()
         {
-            BakeVertexLights.
             bool reCopyFiles = false;
             string[] sounddirectories = new[] { "Stopping", "Stopped", "Starting"};
             if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds")))
@@ -448,23 +447,33 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
             else reCopyFiles = true;
             if (reCopyFiles)
             {
+                string modPath = "";
+                Log("searching modpath ", false, 3);
+                Log("found mod files: " + Directory.GetDirectories(Paths.PluginPath).Length, false, 3);
+                foreach (string s in Directory.GetDirectories(Paths.PluginPath))
+                {
+                    if (!s.ToLower().Contains("timestopper")) continue;
+                    Log("FOUND TIMESTOPPER: " + s, false, 2);
+                    modPath = s;
+                    break;
+                }
                 Directory.CreateDirectory(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds"));
                 foreach (string sounddirectory in  sounddirectories)
                 {
                     Directory.CreateDirectory(Path.Combine(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory)));
                     
                     foreach (string file in Directory.GetFiles(
-                                 Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper"),
+                                 modPath,
                                  "*.*").Select(Path.GetFileName).Where(filename => filename.EndsWith(".ogg") && filename.StartsWith(sounddirectory)))
                     {
-                        Log("copying over sound file: " + sounddirectory + "/" + file, false, 3);
+                        Log("copying over sound file: " + sounddirectory + "/" + file, false, 1);
                         if (!File.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory, file)))
-                            File.Copy(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", sounddirectory + "-" + file.TrimStart((sounddirectory + "-").ToCharArray())),
+                            File.Copy(Path.Combine(modPath, sounddirectory + "-" + file.TrimStart((sounddirectory + "-").ToCharArray())),
                                         Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory, file.TrimStart((sounddirectory + "-").ToCharArray()) ));
                     }
                 }
                 if (!File.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "README.txt")))
-                    File.Copy(Path.Combine(Paths.PluginPath, "GalvinVoltag-The_Timestopper", "Sounds-readme.txt"),
+                    File.Copy(Path.Combine(modPath, "Sounds-readme.txt"),
                                 Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "README.txt"));
             }
             string[] timestopSoundsList = Directory.GetFiles(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "Stopping"), "*.*").
@@ -2651,7 +2660,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     [HarmonyPatch(typeof(GroundCheck), "FixedUpdate")] public class TranspileGroundCheck1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> FixedUpdate"); }
     [HarmonyPatch(typeof(GroundCheck), MethodType.Constructor)] public class TranspileGroundCheck2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "Constructor<GroundCheck>"); }
     [HarmonyPatch(typeof(ClimbStep), "FixedUpdate")] public class TranspileClimbStep { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[ClimbStep]=> FixedUpdate"); }
-    [HarmonyPatch(typeof(CameraController), "Update")] public class TranspileCameraController { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[CameraController]=> Update"); }
+    // [HarmonyPatch(typeof(CameraController), "Update")] public class TranspileCameraController { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[CameraController]=> Update"); }
     [HarmonyPatch(typeof(Punch), "Update")] public class TranspilePunch { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Punch]=> Update"); }
     [HarmonyPatch(typeof(WalkingBob), "Update")] public class TranspileWalkingBob { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[WalkingBob]=> Update"); }
     [HarmonyPatch(typeof(StaminaMeter), "Update")] public class TranspileStaminaMeter { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[StaminaMeter]=> Update"); }

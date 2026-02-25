@@ -1,7 +1,7 @@
 # CHANGELOG:
 
 <details>
-  <summary>1.5.3 | folder structure fix </summary>
+  <summary>1.5.4 | folder structure fix </summary>
 
 #### Fix
 - **fixed** folder structure being messed up after downloading from r2modman
