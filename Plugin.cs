@@ -23,6 +23,7 @@ using UnityEditor.AddressableAssets.Settings;
 using UnityEngine.Networking;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using ULTRAKILL.Portal;
 // using UnityEngine.Rendering;
 using Component = UnityEngine.Component;
 
@@ -221,7 +222,8 @@ namespace The_Timestopper
     {
         public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "1.5.4";
+        public const string Version = "1.6.0";
+        public const string SubVersion = "rc.1";
 
         private readonly Harmony harmony = new Harmony(GUID);
         public static Timestopper Instance;
@@ -452,7 +454,8 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 Log("found mod files: " + Directory.GetDirectories(Paths.PluginPath).Length, false, 3);
                 foreach (string s in Directory.GetDirectories(Paths.PluginPath))
                 {
-                    if (!s.ToLower().Contains("timestopper")) continue;
+                    // if (!s.ToLower().Contains("timestopper")) continue;
+                    if (!File.Exists(Path.Combine(s, "The Timestopper.dll"))) continue;
                     Log("FOUND TIMESTOPPER: " + s, false, 2);
                     modPath = s;
                     break;
@@ -1198,12 +1201,19 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             }
             return velocity;
         }
+
+        private FieldInfo travellersField = AccessTools.Field(typeof(PortalManagerV2), "travellers"); // portal traveller list getter
+        private MethodInfo cacheTravelerValues = AccessTools.Method(typeof(SimplePortalTraveler), "CacheTravelerValues");
         private void Update()
         {
             InvokeCaller.Update();
             if (forbiddenScene) return;
             if (TimeStop)
             {
+                foreach (var traveller in (List<IPortalTraveller>)travellersField.GetValue(MonoSingleton<PortalManagerV2>.Instance))
+                {
+                    cacheTravelerValues.Invoke(traveller, null);
+                }
                 if (!Dummy)
                 {
                     Dummy = new GameObject("Player Dummy");
@@ -2484,12 +2494,34 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     {
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, string name = "CODE")
         {
+            var smoothDampAngle4 = AccessTools.Method(typeof(Mathf), nameof(Mathf.SmoothDampAngle),
+                new[] { typeof(float), typeof(float), typeof(float).MakeByRefType(), typeof(float) });
+            var smoothDampAngle5 = AccessTools.Method(typeof(Mathf), nameof(Mathf.SmoothDampAngle),
+                new[] { typeof(float), typeof(float), typeof(float).MakeByRefType(), typeof(float), typeof(float) });
+            var smoothDampAngle6 = AccessTools.Method(typeof(Mathf), nameof(Mathf.SmoothDampAngle),
+                new[] { typeof(float), typeof(float), typeof(float).MakeByRefType(), typeof(float), typeof(float), typeof(float) });
+
+            var smoothDamp4 = AccessTools.Method(typeof(Mathf), nameof(Mathf.SmoothDamp),
+                new[] { typeof(float), typeof(float), typeof(float).MakeByRefType(), typeof(float) });
+            var smoothDamp5 = AccessTools.Method(typeof(Mathf), nameof(Mathf.SmoothDamp),
+                new[] { typeof(float), typeof(float), typeof(float).MakeByRefType(), typeof(float), typeof(float) });
+            var smoothDamp6 = AccessTools.Method(typeof(Mathf), nameof(Mathf.SmoothDamp),
+                new[] { typeof(float), typeof(float), typeof(float).MakeByRefType(), typeof(float), typeof(float), typeof(float) });
+
+            var vec3SmoothDamp4 = AccessTools.Method(typeof(Vector3), nameof(Vector3.SmoothDamp),
+                new[] { typeof(Vector3), typeof(Vector3), typeof(Vector3).MakeByRefType(), typeof(float) });
+            var vec3SmoothDamp5 = AccessTools.Method(typeof(Vector3), nameof(Vector3.SmoothDamp),
+                new[] { typeof(Vector3), typeof(Vector3), typeof(Vector3).MakeByRefType(), typeof(float), typeof(float) });
+            var vec3SmoothDamp6 = AccessTools.Method(typeof(Vector3), nameof(Vector3.SmoothDamp),
+                new[] { typeof(Vector3), typeof(Vector3), typeof(Vector3).MakeByRefType(), typeof(float), typeof(float), typeof(float) });
+            
+            
+            var timeScaleG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale));
             var deltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
             var fixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
+            var playerTimeScaleG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerTimeScale));
             var playerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
             var playerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
-            var timeScaleG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale));
-            var playerTimeScaleG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerTimeScale));
 
             var waitForSecondsG = AccessTools.Constructor(typeof(WaitForSeconds), new Type[] { typeof(float) });
             var waitForPlayerSecondsG = AccessTools.Constructor(typeof(WaitForPlayerSeconds), new Type[] { typeof(float) });
@@ -2530,6 +2562,61 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
                     newInst.blocks.AddRange(i.blocks);
                     yield return newInst;
                     mls.LogInfo($"modified WaitForSeconds");
+                }
+                else if (i.Calls(smoothDampAngle4))
+                {
+                    // stack has: current, target, ref velocity, smoothTime
+                    // push maxSpeed, deltaTime
+                    yield return new CodeInstruction(OpCodes.Ldc_R4, float.PositiveInfinity);
+                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    var newInst = new CodeInstruction(OpCodes.Call, smoothDampAngle6);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
+                }
+                else if (i.Calls(smoothDampAngle5))
+                {
+                    // stack has: current, target, ref velocity, smoothTime, maxSpeed
+                    // push deltaTime
+                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    var newInst = new CodeInstruction(OpCodes.Call, smoothDampAngle6);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
+                }
+                else if (i.Calls(smoothDamp4))
+                {
+                    yield return new CodeInstruction(OpCodes.Ldc_R4, float.PositiveInfinity);
+                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    var newInst = new CodeInstruction(OpCodes.Call, smoothDamp6);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
+                }
+                else if (i.Calls(smoothDamp5))
+                {
+                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    var newInst = new CodeInstruction(OpCodes.Call, smoothDamp6);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
+                }
+                else if (i.Calls(vec3SmoothDamp4))
+                {
+                    yield return new CodeInstruction(OpCodes.Ldc_R4, float.PositiveInfinity);
+                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    var newInst = new CodeInstruction(OpCodes.Call, vec3SmoothDamp6);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
+                }
+                else if (i.Calls(vec3SmoothDamp5))
+                {
+                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    var newInst = new CodeInstruction(OpCodes.Call, vec3SmoothDamp6);
+                    newInst.labels.AddRange(i.labels);
+                    newInst.blocks.AddRange(i.blocks);
+                    yield return newInst;
                 }
                 else
                 {
@@ -2660,7 +2747,7 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
     [HarmonyPatch(typeof(GroundCheck), "FixedUpdate")] public class TranspileGroundCheck1 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[GroundCheck]=> FixedUpdate"); }
     [HarmonyPatch(typeof(GroundCheck), MethodType.Constructor)] public class TranspileGroundCheck2 { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "Constructor<GroundCheck>"); }
     [HarmonyPatch(typeof(ClimbStep), "FixedUpdate")] public class TranspileClimbStep { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[ClimbStep]=> FixedUpdate"); }
-    // [HarmonyPatch(typeof(CameraController), "Update")] public class TranspileCameraController { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[CameraController]=> Update"); }
+    [HarmonyPatch(typeof(CameraController), "LateUpdate")] public class TranspileCameraController { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[CameraController]=> Update"); }
     [HarmonyPatch(typeof(Punch), "Update")] public class TranspilePunch { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[Punch]=> Update"); }
     [HarmonyPatch(typeof(WalkingBob), "Update")] public class TranspileWalkingBob { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[WalkingBob]=> Update"); }
     [HarmonyPatch(typeof(StaminaMeter), "Update")] public class TranspileStaminaMeter { [HarmonyTranspiler] static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions) => DeltaTimeReplacer.Transpiler(instructions, "[StaminaMeter]=> Update"); }

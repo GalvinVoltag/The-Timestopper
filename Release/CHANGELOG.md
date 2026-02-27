@@ -1,5 +1,19 @@
 # CHANGELOG:
 
+
+<details>
+  <summary>1.6.0-rc1 | Fraud Re-Release </summary>
+
+#### Fix
+- **fixed** Harmony Patch for CameraController
+- **fixed** Portals not working in timestop
+- **fixed** Camera y axis locking at 0 after timestop
+- **changed** Timestopper mod folder now looks for "The Timestopper.dll" instead of folder name
+
+</details>
+
+------
+
 <details>
   <summary>1.5.4 | folder structure fix </summary>
 
