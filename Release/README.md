@@ -1,5 +1,9 @@
-# THE TIMESTOPPER  V 1.5.4
+# THE TIMESTOPPER  V 1.6.0
 A mod to bring your jojo fantasies into ULTRAKILL!
+
+## NOW COMPATIBLE WITH FRAUD!
+#### With the best performance it can ever be
+
 -------
 ### You can do shit like this:
 <img alt="image" src="https://github.com/user-attachments/assets/5b9815ae-71b1-4097-a979-cec437a16064" />
@@ -25,26 +29,23 @@ However, any worries for it might corrupt your save files are unnecessary, you c
 
 ### Abilities:
 + You can punch and grapple enemies in stopped time, they will fly away when you start it
-+ You can still throw coins in stopped time, they will remain in air, crazy tricks are possible!
++ You can still throw and punch coins in stopped time, they will remain in air, crazy tricks are possible!
 + You can still parry in stopped time
 + You can add your own sound effects and select any of which you wish
 + "No Weapon Cooldown" cheat works with Timestopper too
 + Gold Arm is upgradable through terminals fr fr
 + Customizable animation speed, timestop speed, healability, shader effects, and more...
-+ ~~someone is watching you~~
++ ~~urial is dead~~
 
 ### To do:
 + HandPaint compatability
 + Custom layer to obtain the gold arm from, not an altar that cums it out
-+ Make *Special Mode* actually do something
-+ Make certain bosses able to move in stopped time, optional, maybe
-+ ~~Touch grass~~
++ Make certain bosses able to move in stopped time
 + Add sound to arm pickup animation too
 + Add more easter eggs
-+ Beat P-2 without cheating
++ *Special Mode*
 
 ### Downsides / Current Bugs:
-- -~~The pillar cums out the yellow arm wtf!~~
 - -Stuck infinitely after act ending cutscenes (?)
 - -No special mode yet
 

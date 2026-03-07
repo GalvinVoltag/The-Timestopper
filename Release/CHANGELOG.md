@@ -1,7 +1,7 @@
 # CHANGELOG:
 
 <details>
-  <summary>1.6.0-rc2 | Fraud Re-Release </summary>
+  <summary>1.6.0-rc2 | FRAUD + HUGE OPTIMIZATION  </summary>
 
 #### Fix
 - **Fixed** Coins thrown in stopped time can now be punched
