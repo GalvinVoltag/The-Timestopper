@@ -1,5 +1,36 @@
 # CHANGELOG:
 
+<details>
+  <summary>1.6.0-rc2 | Fraud Re-Release </summary>
+
+#### Fix
+- **Fixed** Coins thrown in stopped time can now be punched
+- **Fixed** Timestopper Progress no longer reads and writes from the disk multiple times per frame ( Huge FPS boost )
+- **Fixed** objecs not having correct velocities when going through a portal in timestop
+- **Fixed** AudioMuffleZone not working in stopped time, and sometimes being persistent
+- **Fixed** Player's audio being pitched down in timestop too
+- **Fixed** Do Shader Effects setting not working
+- **Fixed** Completely and utterly broken Geryon boss fight out of bounds when time is stopped once
+  - FakeFallZone now gets its own FixedUpdateCaller automatically
+- **Optimization** RigidbodyStopper no longer executes for sleeping rigidbodies
+- **Optimization** RigidbodyStopper now sleeps non-moving gib and gore properly
+- **Optimization** Grayscaler no longer runs when shaders are off
+- **HUGE optimization!**
+  - Many many Update() calls have been changed with manual static array loop calls
+  - All FixedUpdate() calls have been centralized and modularized
+  - Inverted certain HashSets to Lists where iteration performance matters
+  - Got rid of many many expensive per-frame operations
+  - Introduced new cached values
+- **Changed** Grayscale shader plane is now almost exactly at near plane distance, hopefully fixing mst of portal visuals when up close
+- **Changed** AudioPitcher class is now more stable and robust
+- **Changed** Got rid of local instance lists from multiple classes
+- **Changed** Enemies now use vision type filters to not be able to see the Player in stopped time
+- **Added** New static class called CustomTime for a better custom Time.timeScale implementation in the future
+
+</details>
+
+------
+
 
 <details>
   <summary>1.6.0-rc1 | Fraud Re-Release </summary>
