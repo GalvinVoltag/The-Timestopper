@@ -1,5 +1,8 @@
-# THE TIMESTOPPER  V 1.5.4
+# THE TIMESTOPPER  V 1.6.0
 A mod to bring your jojo fantasies into ULTRAKILL!
+
+### Now with proper Fraud support!
+
 -------
 ### You can do shit like this:
 <img alt="image" src="https://github.com/user-attachments/assets/5b9815ae-71b1-4097-a979-cec437a16064" />
