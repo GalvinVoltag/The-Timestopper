@@ -1,7 +1,36 @@
 # CHANGELOG:
 
 <details>
-  <summary>1.6.0-rc2 | FRAUD + HUGE OPTIMIZATION  </summary>
+  <summary>1.6.6 | Post April Fools + Performance </summary>
+
+#### Fix
+- **fixed** gravity volume shenanigans
+- **fixed** perofrmance improvement by using delegate in FixedUpdateCaller instead of using reflection hundreds of times per frame
+- **changed** resetting timestopper progress now deletes the timestopper.state file appropriately
+- **added** an option to give the timestopper arm without needing the altar
+- **added** an option to turn on the April Fools event
+- **added** more guardrails against null exceptions in the code
+
+</details>
+
+---
+
+<details>
+  <summary>1.6.4 |   >:D) </summary>
+
+#### Small
+- **fixed** Encountering with the first warning message in the Cyber Grind would call you an absolute baffoon
+- **fixed** Some physics inconsistencies during timestop
+- **fixed** Broken firstwarning outside of cybergrind
+- **added** ▉▉▉▉▉ ▉▉▉ ▉▉▉▉▉ ▉▉▉▉▉ ▉▉▉▉▉▉▉ ▉▉▉▉▉▉▉▉▉▉▉▉▉
+- **added** an option to not alter the main menu
+
+</details>
+
+---
+
+<details>
+  <summary>1.6.0 | FRAUD + HUGE OPTIMIZATION  </summary>
 
 #### Fix
 - **Fixed** Coins thrown in stopped time can now be punched

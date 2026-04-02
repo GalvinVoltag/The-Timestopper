@@ -1,4 +1,4 @@
-# THE TIMESTOPPER  V 1.6.0
+# THE TIMESTOPPER  V 1.6.6
 A mod to bring your jojo fantasies into ULTRAKILL!
 
 ## NOW COMPATIBLE WITH FRAUD!
