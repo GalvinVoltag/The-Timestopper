@@ -1,8 +1,12 @@
-# THE TIMESTOPPER  V 1.6.6
+# THE TIMESTOPPER  V 1.6.9
 A mod to bring your jojo fantasies into ULTRAKILL!
 
 ## NOW COMPATIBLE WITH FRAUD!
 #### With the best performance it can ever be
+
+Also...
+[![Buymeacoffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://coff.ee/galvinvoltag)
+<:D)
 
 -------
 ### You can do shit like this:
@@ -59,9 +63,6 @@ Unfortunately, ULTRAKILL's controller inputs are smoothed, which means they stop
 
 ## �What to do if the mod doesn't work / if you find a bug�
 Go to the mod's github page [here](https://github.com/GalvinVoltag/The-Timestopper), and create an issue. I'd appreciate if you'd copy-paste the full log (text from the terminal that opens with the game) inside triple quotes (\``` like this ```), it helps me diagnose the problem more efficiently and correctly. *Also you might wanna follow the issue, I might just build a fix release so that you don't need to wait until the next update.*
-
-
-[![Buymeacoffee](https://github.com/user-attachments/assets/866f5254-f5d5-403b-a7a2-7ab5238efcb6)](https://coff.ee/galvinvoltag)
 
 <details>
   <summary>Guide for dummies</summary>

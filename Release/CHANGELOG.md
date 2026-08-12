@@ -1,6 +1,46 @@
 # CHANGELOG:
 
 <details>
+  <summary>1.6.9 | Hotfix </summary>
+
+#### Change
+- **changed** how AudioPitcher works. It now uses a duplicate of the original track
+
+#### Fix
+- **fixed** the Sawed-On Shotgun
+- **fixed** Noclip being in a platonic love-hate relationship with timestop
+- **fixed** mod not being able to find audio files if nesting was too deep or too shallow
+- **fixed** rockets draining fuel in stopped time, even while frozen
+- **fixed** releasing the chainsaw during timestop causing a crash or freeze
+- **fixed** a small memory leak when you don't timestop for a long time
+- **fixed** Some weapons needing to swap in order to work in stopped time
+- **fixed** harmony patching failures will no longer cause a crash, and will instead skip patching with a warning
+
+#### Technical
+- revamped the codebase so it is sorted in files rather than one big chunk of code
+- got rid of PreventNull() method
+- got rid of GoldArmPickup dummy mechanic
+
+</details>
+
+---
+
+<details>
+  <summary>1.6.8 | Hotfix </summary>
+
+#### Fix
+- **fixed** mod not loading properly due to last Fraud patch carrying a method
+- **fixed** (hopefully) strange parry behaviour
+- **fixed** not being able to aim with Jackhammer during hitstop
+- **fixed** (hopefully) nereberus orbs not changing direction when parried
+- **changed** SimplePortalTraveler's cahce method is no longer called from main plugin
+- **changed** SimplePortalTravelers now utilize FixedUpdateCaller in timestop
+
+</details>
+
+---
+
+<details>
   <summary>1.6.6 | Post April Fools + Performance </summary>
 
 #### Fix

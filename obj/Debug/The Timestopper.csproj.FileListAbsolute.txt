@@ -113,3 +113,7 @@ C:/Users/AADUMAN/AppData/Roaming/r2modmanPlus-local/ULTRAKILL/profiles/Hakitas N
 /home/galvin/Documents/C#/Projects/The_Timestopper/The Timestopper/obj/Debug/The Timestopper.pdb
 /home/galvin/.config/r2modmanPlus-local/ULTRAKILL/profiles/Developer/BepInEx/plugins/GalvinVoltag-The_Timestopper/The Timestopper.dll
 /home/galvin/.config/r2modmanPlus-local/ULTRAKILL/profiles/Developer/BepInEx/plugins/GalvinVoltag-The_Timestopper/The Timestopper.pdb
+/home/galvin/Projects/C#/The_Timestopper/The Timestopper/obj/Debug/The Timestopper.csproj.AssemblyReference.cache
+/home/galvin/Projects/C#/The_Timestopper/The Timestopper/obj/Debug/The Timestopper.csproj.CoreCompileInputs.cache
+/home/galvin/Projects/C#/The_Timestopper/The Timestopper/obj/Debug/The Timestopper.dll
+/home/galvin/Projects/C#/The_Timestopper/The Timestopper/obj/Debug/The Timestopper.pdb
