@@ -1,6 +1,19 @@
 # CHANGELOG:
 
 <details>
+  <summary>1.6.11 | Hotfix </summary>
+
+#### Fix
+- **fixed** issues with audio files not being found, or able to be copied.
+- **fixed** time arm pickup not working (twice)
+
+#### Change
+- **changed** how the dll file is found, the mod not utilizes Info.Location
+</details>
+
+------
+
+<details>
   <summary>1.6.9 | Hotfix </summary>
 
 #### Change

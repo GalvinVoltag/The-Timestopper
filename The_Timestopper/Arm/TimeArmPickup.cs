@@ -15,7 +15,7 @@ namespace The_Timestopper.Arm
                 TimestopperProgress.GiveArm();
                 TimeArm.Instance.animator.Play("Pickup");
                 MonoSingleton<HudMessageReceiver>.Instance?.SendHudMessage(string.Format(Timestopper.ARM_PICKUP_MESSAGE, Timestopper.stopKey.value), "", "", 2);
-                // gameObject.SetActive(false);
+                gameObject.SetActive(false);
                 onPickup?.Invoke();
                 enabled = false;
             }

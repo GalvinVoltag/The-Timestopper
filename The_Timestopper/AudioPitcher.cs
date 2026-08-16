@@ -18,7 +18,7 @@ namespace The_Timestopper
 
         private void Awake()
         {
-            if (!source){
+            if (!source || !source.clip){
                 source = GetComponent<AudioSource>();
                 if (!source)
                 {

@@ -43,7 +43,7 @@ namespace The_Timestopper
     {
         public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "1.6.9";
+        public const string Version = "1.6.11";
         public const string SubVersion = "0";
 
         private readonly Harmony harmony = new Harmony(GUID);
@@ -186,7 +186,7 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
         /// <param name="log">Message to display</param>
         /// <param name="extensive">Extensive messages only display if extensive logging is set to true</param>
         /// <param name="err_lvl">Error level: 0-Info  1-Warning  2-Error  3-Fatal</param>
-        public static void Log(string log, bool extensive = false, ErrorLevel err_lvl = ErrorLevel.Info)
+        public static void Log(object log, bool extensive = false, ErrorLevel err_lvl = ErrorLevel.Info)
         {
             if (extensiveLogging != null && !extensiveLogging.value && extensive)
                     return;
@@ -392,6 +392,7 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 GameObject newaltar = Instantiate(newArmAltar, GameObject.Find("Stairway Down").transform);
                 newaltar.transform.position = new Vector3(-10.0146f, -24.9875f, 590.0158f);
                 newaltar.transform.localEulerAngles = new Vector3(0, 0, 0);
+                newaltar.transform.Find("TimeArmPickup").gameObject.AddComponent<TimeArmPickup>();
                 Log("Added The New Arm Altar", true);
             }
             // Cybergrind Music Explorer Compatability
@@ -434,9 +435,9 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
             }
             var method = typeof(ConfigPanel).GetMethod(
                 "ProtectedInternalMethod",
-                BindingFlags.NonPublic |      // Because it's protected
-                BindingFlags.Instance |       // Instance method (not static)
-                BindingFlags.FlattenHierarchy // Include base class methods
+                BindingFlags.NonPublic |      // protected
+                BindingFlags.Instance |       // not static
+                BindingFlags.FlattenHierarchy // idk, works
             );
             method?.Invoke(slf.parentPanel, null);
         }
@@ -453,8 +454,10 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
         }
         public void ReloadSoundProfilesList()
         {
+            Log("Info.Location: " + Info.Location, false, ErrorLevel.Warning);
             bool reCopyFiles = false;
             string[] sounddirectories = new[] { "Stopping", "Stopped", "Starting"};
+            
             if (Directory.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds")))
                 foreach (string sounddirectory in sounddirectories)
                 {
@@ -467,46 +470,64 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                     }
                 }
             else reCopyFiles = true;
+            
             if (reCopyFiles)
             {
-                string modPath = "";
-                Log("searching modpath ", false, ErrorLevel.Warning);
-                Log("found : " + Directory.GetDirectories(Paths.PluginPath).Length + " loaded mod folders", false, ErrorLevel.Warning);
-                Log("searching for The Timestopper.dll...", false,  ErrorLevel.Warning);
-                modPath = SearchForFile(Paths.PluginPath, "The Timestopper.dll");
-                if (modPath == null)
+                try
                 {
-                    Log("The Timestoper.dll could not be found, please make sure the mod is installed correctly!",
-                        false, ErrorLevel.Error);
-                    return;
-                }
-                Log("The Timestopper.dll found, searching for audio files...", false, ErrorLevel.Warning);
-                
-                Directory.CreateDirectory(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds"));
-                foreach (string sounddirectory in  sounddirectories)
-                {
-                    Directory.CreateDirectory(Path.Combine(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory)));
-                    
-                    foreach (string file in Directory.GetFiles(
-                                 modPath,
-                                 "*.*").Select(Path.GetFileName).Where(filename => filename.EndsWith(".ogg") && filename.StartsWith(sounddirectory)))
+                    string modPath = Path.GetDirectoryName(Info.Location);
+                    if (modPath == null)
                     {
-                        Log("copying over sound file: " + sounddirectory + "/" + file, false, ErrorLevel.Info);
-                        if (!File.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory, file)))
-                            File.Copy(Path.Combine(modPath, sounddirectory + "-" + file.TrimStart((sounddirectory + "-").ToCharArray())),
-                                        Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", sounddirectory, file.TrimStart((sounddirectory + "-").ToCharArray()) ));
+                        Log("The Timestoper.dll could not be found, please make sure the mod is installed correctly!",
+                            false, ErrorLevel.Error);
+                        return;
                     }
+
+                    Log("The Timestopper.dll found, searching for audio files...", false, ErrorLevel.Warning);
+
+                    Directory.CreateDirectory(Path.Combine(Paths.ConfigPath, "Timestopper",
+                        "Sounds")); // create if it doesn't exist
+                    List<string> defaultAudioFiles =
+                        Directory.EnumerateFiles(modPath, "*.ogg", SearchOption.AllDirectories).ToList();
+                    string readmeFile = Directory.EnumerateFiles(modPath, "*.txt", SearchOption.AllDirectories).First();
+
+                    foreach (string sounddirectory in sounddirectories) // create sound folders
+                        Directory.CreateDirectory(Path.Combine(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds",
+                            sounddirectory)));
+
+                    foreach (string audioPath in defaultAudioFiles) // copy over from mod folder
+                    {
+                        string audioFile = Path.GetFileName(audioPath);
+                        string audioDirectory =
+                            Path.GetFileName(Path.GetDirectoryName(audioPath)?.TrimEnd(Path.DirectorySeparatorChar));
+                        Log("copying over audio file to " + audioDirectory);
+                        File.Copy(audioPath,
+                            Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", audioDirectory ?? "unknown",
+                                audioFile), true);
+                    }
+
+                    if (!File.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds",
+                            "README.txt"))) // copy over readme
+                        File.Copy(readmeFile, Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "README.txt"),
+                            true);
                 }
-                if (!File.Exists(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "README.txt")))
-                    File.Copy(Path.Combine(modPath, "Sounds-readme.txt"),
-                                Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "README.txt"));
+                catch (Exception e)
+                {
+                    Log("An error occurred while copying audio files to config, trace:", false, ErrorLevel.Error);
+                    Log(e.Message, false, ErrorLevel.Error);
+                    Log(e.Source, false, ErrorLevel.Error);
+                    Log(e.StackTrace, false, ErrorLevel.Error);
+                    Log(e.TargetSite, false, ErrorLevel.Error);
+                }
             }
+            
             string[] timestopSoundsList = Directory.GetFiles(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "Stopping"), "*.*").
                 Where(file => file.EndsWith(".wav") || file.EndsWith(".ogg")).Select(Path.GetFileNameWithoutExtension).ToArray();
             string[] stopambienceSoundsList = Directory.GetFiles(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "Stopped"), "*.*").
                 Where(file => file.EndsWith(".wav") || file.EndsWith(".ogg")).Select(Path.GetFileNameWithoutExtension).ToArray();
             string[] timestartSoundsList = Directory.GetFiles(Path.Combine(Paths.ConfigPath, "Timestopper", "Sounds", "Starting"), "*.*").
                 Where(file => file.EndsWith(".wav") || file.EndsWith(".ogg")).Select(Path.GetFileNameWithoutExtension).ToArray();
+            
             if (timestopSoundsList.Length < 1) {
                 Log("No time stop sounds found!", false, ErrorLevel.Error);
                 timestopSoundsList = new [] { "FILE ERROR" };
