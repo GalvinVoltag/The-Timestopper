@@ -27,7 +27,7 @@ namespace The_Timestopper
                 }
                 if (!cyberGrindCompatability) source.mute = true;
             }
-            isMusic = (source.spatialBlend == 0 && source.clip.length > 10) 
+            isMusic = (source.spatialBlend == 0 && source.clip && source.clip.length > 10)
                       || gameObject.name == "Battle Theme"
                       || gameObject.name == "Clean Theme"
                       || gameObject.name == "Boss Theme";
