@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 
 namespace The_Timestopper.Internal
 {
@@ -17,19 +18,27 @@ namespace The_Timestopper.Internal
         private static float time;
         private static readonly List<IFixedUpdateReceiver> FixedUpdateCallers = new List<IFixedUpdateReceiver>();
         private static readonly List<IFixedUpdateReceiver> FixedUpdateUnregisters = new List<IFixedUpdateReceiver>();
+        private static readonly List<IFixedUpdateReceiver> FixedUpdateRegisters = new List<IFixedUpdateReceiver>();
         private static readonly HashSet<Type> IgnoredTypes = new HashSet<Type>();
 
         public static bool isInLoop { get; private set; } = false;
 
         private readonly Dictionary<Component, Action> delegates = new Dictionary<Component, Action>();
         private bool overrideTargets = false;
+        public bool isRegistered { get; set; }
+        public bool destroyed;
 
         public static void RegisterFixedUpdate(IFixedUpdateReceiver receiver)
         {
-            FixedUpdateCallers.Add(receiver);
+            receiver.isRegistered = true;
+            if (isInLoop)
+                FixedUpdateRegisters.Add(receiver);
+            else
+                FixedUpdateCallers.Add(receiver);
         }
         public static void UnregisterFixedUpdate(IFixedUpdateReceiver receiver)
         {
+            receiver.isRegistered = false;
             if (isInLoop)
                 FixedUpdateUnregisters.Add(receiver);
             else
@@ -41,32 +50,48 @@ namespace The_Timestopper.Internal
             _targets = GetComponents(typeof(MonoBehaviour))
                 .Where(T => !IgnoredTypes.Contains(T.GetType()) && !(T is IFixedUpdateReceiver)).ToArray();
         }
-        public void Awake()
+        private void Awake()
         {
             UpdateTargetList();
             RegisterFixedUpdate(this);
         }
         public void FakeFixedUpdate()
         {
+            if (destroyed || targets == null) return;
             if (!overrideTargets && gameObject.GetComponentCount() != targets.Length)
                 UpdateTargetList();
+            bool error = false;
             foreach (Component C in targets)
             {
-                if (!C) { _targets = _targets.Where(comp => comp).ToArray(); break; }
-                Type t = C.GetType();
-                if (IgnoredTypes.Contains(t) || !((Behaviour)C).enabled) continue;
-                if (delegates.TryGetValue(C, out var @delegate))
-                    @delegate();
-                else
+                if (error)
                 {
-                    MethodInfo m = t.GetMethod("FixedUpdate",
-                        BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                    if (m == null)
+                    Timestopper.mls.LogWarning("successfully dodged error block");
+                    error = false;
+                }
+                try
+                {
+                    if (!C) { _targets = _targets.Where(comp => comp).ToArray(); break; }
+                    Type t = C.GetType();
+                    if (IgnoredTypes.Contains(t) || !((Behaviour)C).enabled) continue;
+                    if (delegates.TryGetValue(C, out var @delegate))
+                        @delegate();
+                    else
                     {
-                        IgnoredTypes.Add(t);
-                        continue;
+                        MethodInfo m = t.GetMethod("FixedUpdate",
+                            BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                        if (m == null)
+                        {
+                            IgnoredTypes.Add(t);
+                            continue;
+                        }
+                        delegates[C] = (Action)Delegate.CreateDelegate(typeof(Action), C, m);
                     }
-                    delegates[C] = (Action)Delegate.CreateDelegate(typeof(Action), C, m);
+                }
+                catch (Exception e)
+                {
+                    error = true;
+                    Timestopper.mls.LogError("An error occurred while calling a fake fixed update at " + C.GetType() + " of gameobject: " + C.gameObject.name );
+                    Timestopper.mls.LogError(e);
                 }
             }
         }
@@ -78,11 +103,18 @@ namespace The_Timestopper.Internal
             isInLoop = false;
         }
 
-        public static void ClearUnregisteredCallers()
+        private static void ClearUnregisteredCallers()
         {
-            if (FixedUpdateUnregisters.Count == 0) return;
-            foreach (var v in FixedUpdateUnregisters) FixedUpdateCallers.Remove(v);
-            FixedUpdateUnregisters.Clear();
+            if (FixedUpdateUnregisters.Count != 0)
+            {
+                foreach (var v in FixedUpdateUnregisters) FixedUpdateCallers.Remove(v);
+                FixedUpdateUnregisters.Clear();
+            }
+            if (FixedUpdateRegisters.Count != 0)
+            {
+                foreach (var v in FixedUpdateRegisters) FixedUpdateCallers.Add(v);
+                FixedUpdateRegisters.Clear();
+            }
         }
 
         public static void UpdateAll(float deltaTime)
@@ -105,26 +137,29 @@ namespace The_Timestopper.Internal
             ClearUnregisteredCallers();
 
             isInLoop = true;
+            bool error = false;
             foreach (var t in FixedUpdateCallers)
             {
-                t.FakeFixedUpdate();
+                if (t is FixedUpdateCaller FUC && (FUC.destroyed || !FUC.isRegistered)) continue;
+                t?.FakeFixedUpdate();
             }
             isInLoop = false;
         }
 
         private void OnEnable()
         {
-            if (!FixedUpdateCallers.Contains(this)) RegisterFixedUpdate(this);
+            if (!isRegistered) RegisterFixedUpdate(this);
         }
 
         private void OnDisable()
         {
-            UnregisterFixedUpdate(this);
+            if (isRegistered) UnregisterFixedUpdate(this);
         }
 
         private void OnDestroy()
         {
-            UnregisterFixedUpdate(this);
+            destroyed = true;
+            if (isRegistered) UnregisterFixedUpdate(this);
         }
     }
 }

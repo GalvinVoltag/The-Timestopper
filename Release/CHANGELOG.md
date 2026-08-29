@@ -1,6 +1,20 @@
 # CHANGELOG:
 
 <details>
+  <summary>1.6.12 | Hotfix </summary>
+
+#### Fix
+- **fixed** FixedUpdateCaller trying to call updates for destroyed gameObjects
+- **fixed** AudioPitcher's quirks caused by AudioSource duplication, this caused the change to patching original AudioSource component to get the audio effects working
+
+#### Change
+- **changed** music detection length reshold to 30 seconds
+- **changed** AudioPitcher's working prinicples (again), it now relies on a patch of AudioSource
+</details>
+
+-------
+
+<details>
   <summary>1.6.11 | Hotfix </summary>
 
 #### Fix

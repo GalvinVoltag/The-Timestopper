@@ -1,125 +1,188 @@
+using System;
 using System.Collections.Generic;
+using System.Management.Instrumentation;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
+using HarmonyLib;
+using Sandbox;
+using The_Timestopper.Internal;
 using UnityEngine;
 
 namespace The_Timestopper
 {
-    public class CustomTime : MonoBehaviour
+    // [HarmonyPatch(typeof(Time))]
+    // internal static class DeltaTimePatch
+    // {
+    //     [HarmonyPatch(nameof(Time.deltaTime), MethodType.Getter)]
+    //     [HarmonyPostfix]
+    //     static void GetDeltaTime(ref float __result)
+    //     {
+    //         if (!Timestopper.TimeStop) return;
+    //         __result = Timestopper.playerDeltaTime;
+    //     }
+    //     
+    //     [HarmonyPatch(nameof(Time.fixedDeltaTime), MethodType.Getter)]
+    //     [HarmonyPostfix]
+    //     static void GetFixedDeltaTime(ref float __result)
+    //     {
+    //         if (!Timestopper.TimeStop) return;
+    //         __result = Timestopper.playerFixedDeltaTime;
+    //     }
+    //
+    //     [HarmonyPatch(nameof(Time.timeScale), MethodType.Getter)]
+    //     [HarmonyPostfix]
+    //     static void GetTimeScale(ref float __result)
+    //     {
+    //         if (!Timestopper.TimeStop) return;
+    //         __result = Timestopper.playerTimeScale;
+    //     }
+    // }
+
+    public static class UltimateTimeReplacer
     {
-        public struct TimeLayer
+        private static readonly MethodInfo TimeScaleG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale));
+        private static readonly MethodInfo DeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
+        private static readonly MethodInfo FixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
+        private static readonly MethodInfo CustomTimeScaleG = AccessTools.Method(typeof(CustomTime), nameof(CustomTime.GetTimeScale));
+        private static readonly MethodInfo CustomDeltaTimeG = AccessTools.Method(typeof(CustomTime), nameof(CustomTime.GetDeltaTime));
+        private static readonly MethodInfo CustomFixedDeltaTimeG = AccessTools.Method(typeof(CustomTime), nameof(CustomTime.GetFixedDeltaTime));
+        private static readonly MethodInfo GameObjectGetter = AccessTools.PropertyGetter(typeof(Component), nameof(Component.gameObject));
+
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, MethodBase original)
         {
-            public float _timeScale;
-            public float _fixedDeltaTime;
-            public TimeLayer(float timeScale = 1f, float fixedDeltaTime = 0.02f)
+            bool isStatic = original.IsStatic;
+
+            foreach (var instruction in instructions)
             {
-                this._timeScale = timeScale;
-                this._fixedDeltaTime = fixedDeltaTime;
+                if (instruction.Calls(DeltaTimeG))
+                {
+                    var newInst = new CodeInstruction(OpCodes.Ldarg_0);
+                    newInst.labels.AddRange(instruction.labels);
+                    newInst.blocks.AddRange(instruction.blocks);
+                    yield return newInst;
+                    
+                    yield return new CodeInstruction(OpCodes.Callvirt, GameObjectGetter);
+                    yield return new CodeInstruction(OpCodes.Call, CustomDeltaTimeG);
+                    continue;
+                }
+                if (instruction.Calls(FixedDeltaTimeG))
+                {
+                    var newInst = new CodeInstruction(OpCodes.Ldarg_0);
+                    newInst.labels.AddRange(instruction.labels);
+                    newInst.blocks.AddRange(instruction.blocks);
+                    yield return newInst;
+                    
+                    yield return new CodeInstruction(OpCodes.Callvirt, GameObjectGetter);
+                    yield return new CodeInstruction(OpCodes.Call, CustomFixedDeltaTimeG);
+                    continue;
+                }
+                if (instruction.Calls(TimeScaleG))
+                {
+                    var newInst = new CodeInstruction(OpCodes.Ldarg_0);
+                    newInst.labels.AddRange(instruction.labels);
+                    newInst.blocks.AddRange(instruction.blocks);
+                    yield return newInst;
+                    
+                    yield return new CodeInstruction(OpCodes.Callvirt, GameObjectGetter);
+                    yield return new CodeInstruction(OpCodes.Call, CustomTimeScaleG);
+                    continue;
+                }
+                yield return instruction;
             }
         }
-
-        private static Dictionary<int, TimeLayer> layers = new Dictionary<int, TimeLayer>();
-        private static Dictionary<int, int> contributors = new Dictionary<int, int>();
-        private static Dictionary<GameObject, CustomTime> gameObjectBindings = new Dictionary<GameObject, CustomTime>();
-        private static Dictionary<GameObject, int> gameObjectids = new Dictionary<GameObject, int>();
-        private static TimeLayer currentLayer = new TimeLayer();
-        private static GameObject currentGameObject;
-
-        /// <summary>
-        /// When this is set to true, no time layers will be deleted when they become empty
-        /// </summary>
-        public static bool allPersistent = false;
-        public static float timeScale => currentLayer._timeScale;
-        public static float deltaTime => Time.unscaledDeltaTime * currentLayer._timeScale;
-        public static float fixedDeltaTime => currentLayer._fixedDeltaTime;
+    }
+    
+    
+    public class CustomTime : MonoBehaviour, IAlter, IAlterOptions<float>
+    {
+        internal static readonly ConditionalWeakTable<GameObject, CustomTime> Registry =
+            new ConditionalWeakTable<GameObject, CustomTime>();
         
-
-        /// <summary>
-        /// Used to create time layers for use of different timescales in the same scene,
-        /// it is HIGHLY ADVICED TO KEEP TRACK OF LAYERS WITH AN ENUM TO AVOID
-        /// NULL EXPRESSION ERRORS, BE WARNED!
-        /// </summary>
-        /// <param name="id"> id of the layer that is going to be created </param>
-        /// <param name="layer"> the time layer to be put in this id </param>
-        public static void CreateTimeLayer(int id, TimeLayer layer)
+        public static CustomTime GetCustomTimeOf(Transform t)
         {
-            // if (!layers.TryAdd(id, layer)) throw new Exception("Cannot create a layer in the spot that already exists.");
-            contributors[id] = -1;
-        }
-        public static void SetTimeLayer(int id, TimeLayer timeLayer)
-        {
-            if (!layers.ContainsKey(id)) contributors[id] = -1;
-            layers[id] = timeLayer;
-        }
-        public static void BindLayer(int bindLayer)
-        {
-            currentLayer = layers[bindLayer];
-        }
-        
-        
-        private int _layer = 0;
-        /// <summary>
-        /// time layer of the GameObject that is bound with this CustomTime component
-        /// CustomTime.deltaTime will not update unless Bind() is called again
-        /// </summary>
-        public int layer
-        {
-            get => _layer;
-            set {
-                contributors[_layer]--;
-                if (contributors[_layer] == 0 && !allPersistent) contributors.Remove(_layer);
-                _layer = value;
-                if (contributors[value] == -1)contributors[value]++;
-                contributors[value]++;
-                gameObjectids[gameObject] = value;
-                if (currentGameObject == gameObject) currentLayer = layers[value];
+            Transform target = t;
+            CustomTime result = null;
+            while (target != null && !Registry.TryGetValue(target.gameObject, out result))
+            {
+                target = target.parent;
             }
+            return result;
         }
 
-        public static int Layer
+        public static float GetDeltaTime(GameObject go)
         {
-            get => currentGameObject ? gameObjectids[currentGameObject] : 0;
+            CustomTime CT = GetCustomTimeOf(go.transform);
+            float timeScale = CT? CT.timeScale : Time.timeScale;
+            return Time.unscaledDeltaTime*timeScale;
+        }
+        public static float GetFixedDeltaTime(GameObject go)
+        {
+            CustomTime CT = GetCustomTimeOf(go.transform);
+            float timeScale = CT? CT.timeScale : Time.timeScale;
+            return Time.fixedDeltaTime*timeScale;
+        }
+        public static float GetTimeScale(GameObject go)
+        {
+            CustomTime CT = GetCustomTimeOf(go.transform);
+            return CT? CT.timeScale : Time.timeScale;
+        }
+        public static void SetTimeScale(GameObject go, float f)
+        {
+            CustomTime CT = GetCustomTimeOf(go.transform);
+            if (CT) CT.timeScale = f;
+            else Time.timeScale = f;
+        }
+
+
+
+        private Animator[] animators;
+        private float _timeScale = 1;
+        public float timeScale
+        {
+            get => _timeScale;
             set
             {
-                if (!currentGameObject) return;
-                gameObjectBindings[currentGameObject].layer = value;
+                _timeScale = value;
+                foreach (Animator animator in animators)
+                {
+                    if (!animator) continue;
+                    animator.speed = _timeScale;
+                }
             }
         }
-
-        public static void Bind(TimeLayer timeLayer)
-        {
-            currentLayer = timeLayer;
-        }
-        public static void Bind(GameObject go)
-        {
-            if (!gameObjectBindings.ContainsKey(go))
-                go.AddComponent<CustomTime>();
-            currentLayer = layers[gameObjectids[go]];
-            currentGameObject = go;
-        }
-
+        
         private void Awake()
         {
-            if (!layers.ContainsKey(layer)) CreateTimeLayer(layer, new TimeLayer());
-            gameObjectBindings.Add(gameObject, this);
-            gameObjectids.Add(gameObject, layer);
-            if (contributors[layer] == -1) contributors[layer]++;
-            contributors[layer]++;
+            Registry.Add(gameObject, this);
+            animators = GetComponentsInChildren<Animator>();
         }
 
         private void OnDestroy()
         {
-            gameObjectBindings.Remove(gameObject);
-            gameObjectids.Remove(gameObject);
-            contributors[layer]--;
-            if (contributors[layer] == 0 && !allPersistent) contributors.Remove(layer);
+            Registry.Remove(gameObject);
         }
 
-        public void Bind()
+        public string alterKey => "CustomTime";
+        public string alterCategoryName => "Custom Time Scale";
+
+        public AlterOption<float>[] options
         {
-            currentLayer = layers[layer];
+            get
+            {
+                return new AlterOption<float>[1]
+                {
+                    new AlterOption<float>()
+                    {
+                        key = "timescale",
+                        name = "Time Scale %",
+                        value = timeScale*100.0f,
+                        callback = (value => timeScale = value/100.0f)
+                    }
+                };
+            }
         }
-        public void SetCurrentLayerTimeScale(float TimeScale)
-        {
-            layers[layer] = new TimeLayer(TimeScale, layers[layer]._fixedDeltaTime);
-        }
+        
+        
     }
 }

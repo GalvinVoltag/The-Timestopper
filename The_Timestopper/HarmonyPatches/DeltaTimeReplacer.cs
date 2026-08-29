@@ -19,12 +19,12 @@ namespace The_Timestopper.HarmonyPatches
     {
         private static ManualLogSource mls;
         
-        static readonly MethodInfo timeScaleG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale));
-        static readonly MethodInfo deltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
-        static readonly MethodInfo fixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
-        static readonly MethodInfo playerTimeScaleG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerTimeScale));
-        static readonly MethodInfo playerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
-        static readonly MethodInfo playerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
+        private static readonly MethodInfo TimeScaleG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale));
+        private static readonly MethodInfo DeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
+        private static readonly MethodInfo FixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
+        private static readonly MethodInfo PlayerTimeScaleG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerTimeScale));
+        private static readonly MethodInfo PlayerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
+        private static readonly MethodInfo PlayerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
         public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, string name = "CODE")
         {
             var smoothDampAngle4 = AccessTools.Method(typeof(Mathf), nameof(Mathf.SmoothDampAngle),
@@ -49,42 +49,42 @@ namespace The_Timestopper.HarmonyPatches
                 new[] { typeof(Vector3), typeof(Vector3), typeof(Vector3).MakeByRefType(), typeof(float), typeof(float), typeof(float) });
             
             
-            // var timeScaleG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale));
-            // var deltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
-            // var fixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
-            // var playerTimeScaleG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerTimeScale));
-            // var playerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
-            // var playerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
-
+            // var TimeScaleG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale));
+            // var DeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime));
+            // var FixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime));
+            // var PlayerTimeScaleG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerTimeScale));
+            // var PlayerDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerDeltaTime));
+            // var PlayerFixedDeltaTimeG = AccessTools.PropertyGetter(typeof(Timestopper), nameof(Timestopper.playerFixedDeltaTime));
+            
             // var waitForSecondsG = AccessTools.Constructor(typeof(WaitForSeconds), new Type[] { typeof(float) });
             var waitForPlayerSecondsG = AccessTools.Constructor(typeof(WaitForPlayerSeconds), new [] { typeof(float) });
             
             if (mls == null) mls = BepInEx.Logging.Logger.CreateLogSource(Timestopper.Name);
-
-            // mls.LogWarning($"Transpiling " + name + "...");
+            
+            mls.LogWarning($"Transpiling " + name + "...");
             int totalChanges = 0;
             foreach (var i in instructions)
             {
                 totalChanges++;
-                if (i.Calls(deltaTimeG))
+                if (i.Calls(DeltaTimeG))
                 {
-                    var newInst = new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    var newInst = new CodeInstruction(OpCodes.Call, PlayerDeltaTimeG);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);
                     yield return newInst;
                     //mls.LogInfo($"modified deltaTime");
                 }
-                else if (i.Calls(fixedDeltaTimeG))
+                else if (i.Calls(FixedDeltaTimeG))
                 {
-                    var newInst = new CodeInstruction(OpCodes.Call, playerFixedDeltaTimeG);
+                    var newInst = new CodeInstruction(OpCodes.Call, PlayerFixedDeltaTimeG);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);
                     yield return newInst;
                     //mls.LogInfo($"modified fixedDeltaTime");
                 }
-                else if (i.Calls(timeScaleG))
+                else if (i.Calls(TimeScaleG))
                 {
-                    var newInst = new CodeInstruction(OpCodes.Call, playerTimeScaleG);
+                    var newInst = new CodeInstruction(OpCodes.Call, PlayerTimeScaleG);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);
                     yield return newInst;
@@ -103,7 +103,7 @@ namespace The_Timestopper.HarmonyPatches
                     // stack has: current, target, ref velocity, smoothTime
                     // push maxSpeed, deltaTime
                     yield return new CodeInstruction(OpCodes.Ldc_R4, float.PositiveInfinity);
-                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    yield return new CodeInstruction(OpCodes.Call, PlayerDeltaTimeG);
                     var newInst = new CodeInstruction(OpCodes.Call, smoothDampAngle6);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);
@@ -113,7 +113,7 @@ namespace The_Timestopper.HarmonyPatches
                 {
                     // stack has: current, target, ref velocity, smoothTime, maxSpeed
                     // push deltaTime
-                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    yield return new CodeInstruction(OpCodes.Call, PlayerDeltaTimeG);
                     var newInst = new CodeInstruction(OpCodes.Call, smoothDampAngle6);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);
@@ -122,7 +122,7 @@ namespace The_Timestopper.HarmonyPatches
                 else if (i.Calls(smoothDamp4))
                 {
                     yield return new CodeInstruction(OpCodes.Ldc_R4, float.PositiveInfinity);
-                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    yield return new CodeInstruction(OpCodes.Call, PlayerDeltaTimeG);
                     var newInst = new CodeInstruction(OpCodes.Call, smoothDamp6);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);
@@ -130,7 +130,7 @@ namespace The_Timestopper.HarmonyPatches
                 }
                 else if (i.Calls(smoothDamp5))
                 {
-                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    yield return new CodeInstruction(OpCodes.Call, PlayerDeltaTimeG);
                     var newInst = new CodeInstruction(OpCodes.Call, smoothDamp6);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);
@@ -139,7 +139,7 @@ namespace The_Timestopper.HarmonyPatches
                 else if (i.Calls(vec3SmoothDamp4))
                 {
                     yield return new CodeInstruction(OpCodes.Ldc_R4, float.PositiveInfinity);
-                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    yield return new CodeInstruction(OpCodes.Call, PlayerDeltaTimeG);
                     var newInst = new CodeInstruction(OpCodes.Call, vec3SmoothDamp6);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);
@@ -147,7 +147,7 @@ namespace The_Timestopper.HarmonyPatches
                 }
                 else if (i.Calls(vec3SmoothDamp5))
                 {
-                    yield return new CodeInstruction(OpCodes.Call, playerDeltaTimeG);
+                    yield return new CodeInstruction(OpCodes.Call, PlayerDeltaTimeG);
                     var newInst = new CodeInstruction(OpCodes.Call, vec3SmoothDamp6);
                     newInst.labels.AddRange(i.labels);
                     newInst.blocks.AddRange(i.blocks);

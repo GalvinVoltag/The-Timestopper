@@ -8,6 +8,7 @@ namespace The_Timestopper.Physics
     public class RigidbodyStopper : MonoBehaviour, IFixedUpdateReceiver    // Added to all Rigidbodies when time stops
     {
         private static List<RigidbodyStopper> instances = new List<RigidbodyStopper>();
+        public bool isRegistered { get; set; }
 
         public float localTimeScale = 1.0f; // local timescale, so that coins and stuff freeze slowly
         bool byDio;

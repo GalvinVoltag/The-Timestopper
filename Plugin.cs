@@ -14,7 +14,7 @@ using PluginConfig.API;
 using PluginConfig.API.Fields;
 using System.ComponentModel;
 using System.Linq;
-using Gravity;
+using System.Text;
 using PluginConfig.API.Functionals;
 using PluginConfiguratorComponents;
 using The_Timestopper.Player;
@@ -43,7 +43,7 @@ namespace The_Timestopper
     {
         public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "1.6.11";
+        public const string Version = "1.6.12";
         public const string SubVersion = "0";
 
         private readonly Harmony harmony = new Harmony(GUID);
@@ -89,8 +89,7 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
         public static float StoppedTimeAmount;
         public static bool LoadDone;
         public static float realTimeScale = 1.0f;
-        [DefaultValue(1.0f)]
-        public static float playerTimeScale { get; private set; }
+        [DefaultValue(1.0f)] public static float playerTimeScale { get; private set; } = 1;
         public static bool fixedCall;
         public static bool firstLoad = true;
         public static bool cybergrind;
@@ -216,6 +215,132 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 FixedUpdateFix(child);
             }
         }
+
+        public static bool ReferencesDeltaTime(MethodInfo method)
+        {
+            var body = method.GetMethodBody();
+            if (body == null) return false;
+            var raw = body.GetILAsByteArray();
+            var instructions = HarmonyLib.PatchProcessor.GetOriginalInstructions(method);
+            foreach (var i in instructions)
+            {
+                if (
+                    i.Calls(AccessTools.PropertyGetter(typeof(Time), nameof(Time.deltaTime))) ||
+                    i.Calls(AccessTools.PropertyGetter(typeof(Time), nameof(Time.timeScale))) ||
+                    i.Calls(AccessTools.PropertyGetter(typeof(Time), nameof(Time.fixedDeltaTime))) 
+                    )
+                    return true;
+            }
+
+            return false;
+        }
+        
+        
+        
+        public void ReplaceConsoleLine(object o)
+        {
+            Stream stdout = Console.OpenStandardOutput();
+            int lines = o.ToString().Split('\n').Length;
+            int oldTop = Console.CursorTop;
+            for (int i = 0; i <= lines; i++)
+            {
+                Console.CursorLeft = 0;
+                byte[] clear = Encoding.UTF8.GetBytes( new string(' ', Console.WindowWidth-1));
+                stdout.Write(clear, 0, clear.Length);
+                Console.CursorTop--;
+            }
+            Console.CursorTop++;
+            Console.CursorLeft = 0;
+            byte[] bytes = Encoding.UTF8.GetBytes(o.ToString());
+            stdout.Write(bytes, 0, bytes.Length);
+            stdout.Flush();
+            Console.CursorTop = oldTop;
+            Console.CursorLeft = 0;
+        }
+
+        void ExperimentalCustomTimePatches()
+        {
+            mls.LogWarning("Initiating experimental CustomTime transpiling process...");
+            HarmonyMethod transpiler = new HarmonyMethod(typeof(UltimateTimeReplacer).GetMethod(nameof(UltimateTimeReplacer.Transpiler)));
+
+            string barspace = "\n\n";
+
+            foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (asm == null) continue;
+                string assemblyName = asm.GetName().Name;
+                if (assemblyName.StartsWith("System") || assemblyName.StartsWith("mscorlib") ||
+                    assemblyName.StartsWith("0Harmony") || assemblyName.StartsWith("BepInEx") || assemblyName.StartsWith("The Timestopper") ||
+                    assemblyName.StartsWith("Mono") || assemblyName.StartsWith("Harmony") || assemblyName.StartsWith("NewBlood")) continue;
+                // if (!assemblyName.StartsWith("Assembly")) continue;
+                
+                Type[] types;
+                try { types = asm.GetTypes(); }
+                catch (ReflectionTypeLoadException e)
+                { mls.LogError("cannot get types from " + assemblyName); types = e.Types.Where(t => t != null).ToArray(); }
+
+                mls.LogWarning("total of " + types.Length + " types found in " + assemblyName + barspace);
+                
+                int totalTypes = types.Length;
+                int patchTypes = 0;
+                int totalChanges = 0;
+                
+                foreach (Type type in types)
+                {
+                    if (!typeof(Component).IsAssignableFrom(type)) continue;
+                    
+                    MethodInfo[] methods;
+                    try { methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static |
+                                                    BindingFlags.Public | BindingFlags.NonPublic |
+                                                    BindingFlags.DeclaredOnly); }catch {
+                        mls.LogError("error while getting methods of " + type.Name + ". " + barspace);
+                        continue;
+                    }
+
+                    foreach (MethodInfo method  in methods)
+                    {
+                        if (method.IsAbstract || method.ContainsGenericParameters || method.IsGenericMethodDefinition)
+                            continue;
+                        
+                        try { if (method == null || !method.HasMethodBody() || method.GetMethodBody() == null) continue; }
+                        catch {
+                            mls.LogError("error while getting body of " + method.Name + " of " + type.Name + ". " + barspace);
+                            continue; }
+                        
+                        try {
+                            if (!ReferencesDeltaTime(method)) continue;
+                            harmony.Patch(method, transpiler: transpiler);
+                            totalChanges++;
+                        }catch (Exception e) {
+                            mls.LogError("error while transpiling " + method.Name + " of " + type.Name + ".\n" + e + barspace);
+                            continue;
+                        }
+                    }
+                    
+                    string loadingString = "transpiling: " + (((float)patchTypes / totalTypes) * 100.0f).ToString("000.00") + " %\n";
+                    loadingString += "[";
+                    for (int i = 0; i < 100; i++)
+                    {
+                        if (i < ((float)patchTypes / totalTypes)*100) loadingString += "#";
+                        else loadingString += " ";
+                    }
+                    loadingString += "]";
+                    patchTypes++;
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    ReplaceConsoleLine(loadingString);
+                    Console.ResetColor();
+                }
+                
+                if (totalChanges > 0)
+                    mls.LogWarning("Transpiled with total of " + totalChanges + " changes.");
+                else
+                    mls.LogError("Transpiled with no changes (" + totalChanges + ").");
+                
+            }
+            
+            mls.LogWarning("patching ended ");
+        }
+        
         void Awake()
         {
             if (Instance == null) { Instance = this; }
@@ -236,7 +361,9 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
             InitializeConfig();
 
             playerTimeScale = 1.0f;
-
+            
+            // ExperimentalCustomTimePatches();
+            
             try
             {
                 harmony.PatchAll();
@@ -271,8 +398,8 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
             }
             else
             {
-                var transpilerMethod = typeof(TranspileCameraController).GetMethod("Transpiler", BindingFlags.Static | BindingFlags.NonPublic);
-                harmony.Patch(target, transpiler: new HarmonyMethod(transpilerMethod));
+                // var transpilerMethod = typeof(TranspileCameraController).GetMethod("Transpiler", BindingFlags.Static | BindingFlags.NonPublic);
+                // harmony.Patch(target, transpiler: new HarmonyMethod(transpilerMethod));
             }
 
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -297,6 +424,9 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
             
             if (go.GetComponent<AudioSource>() && !go.GetComponent<AudioPitcher>() && !go.transform.IsChildOf(Player.transform) && !go.GetComponent<Chainsaw>())
                 go.AddComponent<AudioPitcher>();
+
+            if (go.GetComponent<Enemy>())
+                go.AddComponent<CustomTime>();
 
             SimplePortalTraveler spt = go.GetComponent<SimplePortalTraveler>();
             if (spt)
@@ -766,14 +896,14 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
             using (var stream =
                    assembler.GetManifestResourceStream("The_Timestopper.aprilfools.bundle"))
             {
-                mls.LogWarning("started loading something special girrrl!");
+                // mls.LogWarning("started loading something special girrrl!");
                 aprilFoolsBundle = AssetBundle.LoadFromStream(stream);
                 aprilFoolsPFPList = aprilFoolsBundle.LoadAllAssets<Sprite>();
                 rickrollObject = aprilFoolsBundle.LoadAllAssets<GameObject>()[0];
-                foreach (UnityEngine.Object s in aprilFoolsBundle.LoadAllAssets()) {
-                    mls.LogWarning(s.ToString());
-                }
-                mls.LogWarning("END ---//");
+                // foreach (UnityEngine.Object s in aprilFoolsBundle.LoadAllAssets()) {
+                //     mls.LogWarning(s.ToString());
+                // }
+                // mls.LogWarning("END ---//");
             }
             // if (isAprilFools)
             // {
@@ -1242,14 +1372,9 @@ You have <color=#FF4343>The Timestopper</color> in your possession. Using this i
             if (TimeStop && MonoSingleton<OptionsManager>.Instance && !MonoSingleton<OptionsManager>.Instance.paused)
             {
                 Time.timeScale = realTimeScale;
-                // if (MonoSingleton<NewMovement>.Instance.rb.useGravity)
-                //     MonoSingleton<NewMovement>.Instance.rb.AddForce(Physics.gravity, ForceMode.Acceleration);
                 FixedUpdateCaller.CallAllFixedUpdates();
-                // Vector3 oldGravity = Physics.gravity;
-                // Physics.gravity = Vector3.zero;
                 if (playerDeltaTime > 0)
                     UnityEngine.Physics.Simulate(Mathf.Max(Time.fixedDeltaTime * (1 - realTimeScale), 0));   // Manually simulate Rigidbody physics
-                // Physics.gravity = oldGravity;
             }
         }
         float time;
