@@ -20,43 +20,39 @@ namespace The_Timestopper
             SceneManager.GetActiveScene().GetRootGameObjects(rootGameObjects);
             foreach (GameObject GO in rootGameObjects)
             {
-                if (oldRootGameObjects.Contains(GO)) continue;
-                ExecuteOnTreeChange.ExecuteOnNewGameObject(GO);
+                if (!oldRootGameObjects.Add(GO)) continue;
+                GO.GetOrAddComponent<ExecuteOnTreeChange>();
             }
-            oldRootGameObjects = rootGameObjects.ToHashSet();
+            oldRootGameObjects.RemoveWhere(t => !t || t.transform.parent != null);
         }
     }
     public class ExecuteOnTreeChange : MonoBehaviour
     {
+        /// <summary>
+        /// This is called whenever a gameobject is enabled or instantiated, and will include all hierarchy of said object.
+        /// </summary>
         public static event Action<GameObject> onNewGameObject;
+        public static bool executed { get; private set; } = false;
         
         private HashSet<Transform> oldChildren = new HashSet<Transform>();
-        List<Transform> newChildren = new List<Transform>();
-
-        public static void ExecuteOnNewGameObject(GameObject go)
-        {
-            onNewGameObject?.Invoke(go);
-            if (go.GetComponent<ExecuteOnTreeChange>()) return;
-            ExecuteOnTreeChange eotc = go.AddComponent<ExecuteOnTreeChange>();
-            eotc.OnTransformChildrenChanged();
-        }
         
 
         private void OnEnable()
         {
+            if (executed) return;
+            onNewGameObject?.Invoke(gameObject);
             OnTransformChildrenChanged();
+            executed = true;
         }
 
         private void OnTransformChildrenChanged()
         {
-            newChildren.Clear();
+            oldChildren.RemoveWhere(t => !t || !t.IsChildOf(transform));
             foreach (Transform t in transform)
             {
-                newChildren.Add(t);
-                if (oldChildren.Contains(t)) continue;
-                ExecuteOnNewGameObject(t.gameObject);
+                if (!oldChildren.Add(t)) continue;
+                t.gameObject.GetOrAddComponent<ExecuteOnTreeChange>();
             }
-            oldChildren = new HashSet<Transform>(newChildren);
         }
     }
 }

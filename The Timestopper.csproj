@@ -730,7 +730,9 @@
     <Compile Include="The_Timestopper\AudioPitcher.cs" />
     <Compile Include="The_Timestopper\CanvasExcluder.cs" />
     <Compile Include="The_Timestopper\ComponentDuplicator.cs" />
-    <Compile Include="The_Timestopper\CustomTime.cs" />
+    <Compile Include="The_Timestopper\CustomTime\AnimatorTimeModule.cs" />
+    <Compile Include="The_Timestopper\CustomTime\CustomTime.cs" />
+    <Compile Include="The_Timestopper\CustomTime\CustomTimeModule.cs" />
     <Compile Include="The_Timestopper\HarmonyPatches\BulkTranspilers.cs" />
     <Compile Include="The_Timestopper\HarmonyPatches\DeltaTimeReplacer.cs" />
     <Compile Include="The_Timestopper\HarmonyPatches\IndividualPatches.cs" />

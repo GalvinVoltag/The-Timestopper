@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using The_Timestopper.Internal;
 using ULTRAKILL.Portal;
@@ -33,11 +34,31 @@ namespace The_Timestopper.Physics
 
         public static void FreezeAll()
         {
-            foreach (var RS in instances) RS.Freeze();
+            foreach (var RS in instances)
+            {
+                try
+                {
+                    RS.Freeze();
+                }
+                catch (Exception e)
+                {
+                    Timestopper.mls.LogError( $"error while freezing body {RS?.gameObject.name} " + e);
+                }
+            }
         }
         public static void UnfreezeAll()
         {
-            foreach (var RS in instances) RS.UnFreeze();
+            foreach (var RS in instances) 
+            {
+                try
+                {
+                    RS.UnFreeze();
+                }
+                catch (Exception e)
+                {
+                    Timestopper.mls.LogError( $"error while unfreezing body {RS?.gameObject.name} " + e);
+                }
+            }
         }
 
         private void Register()
@@ -69,7 +90,7 @@ namespace The_Timestopper.Physics
 
             if (R.IsSleeping()) return;
             byDio = Timestopper.realTimeScale <= 0.5f;
-            if (enemy)
+            if (enemy && EID)
             {
                 if (EID.enemyType != EnemyType.Turret) EID.ignorePlayer = true;
                 if (EID.enemyType == EnemyType.Providence)
@@ -94,7 +115,7 @@ namespace The_Timestopper.Physics
                 Destroy(this);
                 return;
             }
-            if (enemy)
+            if (enemy && EID)
             {
                 EID.ignorePlayer = false;
                 if (EID.enemyType == EnemyType.Providence)

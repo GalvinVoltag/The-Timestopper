@@ -19,6 +19,7 @@ using PluginConfig.API.Functionals;
 using PluginConfiguratorComponents;
 using The_Timestopper.Player;
 using The_Timestopper.Arm;
+using The_Timestopper.CustomTimeLibrary;
 using The_Timestopper.HarmonyPatches;
 using The_Timestopper.Internal;
 using The_Timestopper.Physics;
@@ -43,7 +44,7 @@ namespace The_Timestopper
     {
         public const string GUID = "dev.galvin.timestopper";
         public const string Name = "The Timestopper";
-        public const string Version = "1.6.12";
+        public const string Version = "1.6.13";
         public const string SubVersion = "0";
 
         private readonly Harmony harmony = new Harmony(GUID);
@@ -419,8 +420,9 @@ Can be <color=#FFFF24>upgraded</color> through terminals.
                 return;
             }
 
-            if (go.GetComponent<Rigidbody>() && !go.GetComponent<RigidbodyStopper>())  // not this line, even tho it also includes RigidbodyStopper in code
-                go.AddComponent<RigidbodyStopper>();  // that line is this line
+            // delete your comments when you solve the bug fuh
+            if (go.GetComponent<Rigidbody>() && !go.GetComponent<RigidbodyStopper>()) 
+                go.AddComponent<RigidbodyStopper>();
             
             if (go.GetComponent<AudioSource>() && !go.GetComponent<AudioPitcher>() && !go.transform.IsChildOf(Player.transform) && !go.GetComponent<Chainsaw>())
                 go.AddComponent<AudioPitcher>();

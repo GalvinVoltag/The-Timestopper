@@ -1,6 +1,20 @@
 # CHANGELOG:
 
 <details>
+  <summary>1.6.13 | Hotfix </summary>
+
+#### Fix
+- **fixed** EID becoming null causing null reference exceptions
+- **fixed** Somehow messed up merge request? idk
+
+#### Change
+- Performance improvements for SceneHierarchyWatcher and ExecuteOnTreeChange
+
+</details>
+
+-------
+
+<details>
   <summary>1.6.12 | Hotfix </summary>
 
 #### Fix

@@ -137,11 +137,19 @@ namespace The_Timestopper.Internal
             ClearUnregisteredCallers();
 
             isInLoop = true;
-            bool error = false;
             foreach (var t in FixedUpdateCallers)
             {
                 if (t is FixedUpdateCaller FUC && (FUC.destroyed || !FUC.isRegistered)) continue;
-                t?.FakeFixedUpdate();
+                {
+                    try
+                    {
+                        t?.FakeFixedUpdate();
+                    }
+                    catch (Exception e)
+                    {
+                        Timestopper.mls.LogError("error while calling fake fixed update: " + e);
+                    }
+                }
             }
             isInLoop = false;
         }
